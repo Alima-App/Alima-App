@@ -43,3 +43,52 @@ button[type=submit]:disabled { opacity: .6; cursor: not-allowed; }
 .menu-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1rem; }
 .menu-card { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .5rem; padding: 1.75rem 1rem; background: var(--white); border: 1px solid var(--border); border-radius: 12px; text-decoration: none; color: var(--navy); font-weight: 600; font-size: .95rem; transition: border-color .2s, box-shadow .2s; }
 .menu-card:hover { border-color: var(--green); box-shadow: 0 2px 12px rgba(45,122,79,.12); }
+
+/* PAGE */
+.page-wrap { max-width: 900px; margin: 0 auto; padding: 2rem 5%; }
+.page-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; margin-bottom: 2rem; flex-wrap: wrap; }
+.page-header h2 { font-size: 1.4rem; margin-top: .25rem; }
+.back-link { font-size: .8rem; color: var(--muted); text-decoration: none; display: block; margin-bottom: .25rem; }
+.back-link:hover { color: var(--green); }
+.loading { color: var(--muted); padding: 2rem 0; }
+.hint { font-size: .8rem; color: var(--muted); margin-top: -.5rem; margin-bottom: .75rem; }
+
+/* CARD */
+.card { background: var(--white); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; margin-bottom: 1rem; }
+.form-card { margin-bottom: 1.5rem; }
+.form-card h3 { font-size: 1rem; margin-bottom: 1rem; }
+.input-group { margin-bottom: 1rem; }
+.form-actions { display: flex; gap: .75rem; margin-top: 1.25rem; }
+.empty-state { text-align: center; padding: 3rem 1rem; color: var(--muted); background: var(--white); border: 1px dashed var(--border); border-radius: 12px; }
+
+/* KELAS CARD */
+.kelas-card { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+.kelas-info h3 { font-size: 1rem; margin-bottom: .3rem; }
+.kode-wrap { display: flex; align-items: center; gap: .5rem; margin-bottom: .3rem; flex-wrap: wrap; }
+.kode-label { font-size: .78rem; color: var(--muted); }
+.kode { background: var(--bg); padding: .2rem .6rem; border-radius: 4px; font-family: monospace; font-size: .9rem; letter-spacing: .1em; color: var(--navy); border: 1px solid var(--border); }
+.kelas-actions { display: flex; gap: .5rem; flex-wrap: wrap; }
+.muted { font-size: .82rem; color: var(--muted); }
+
+/* BUTTONS */
+.btn-primary { background: var(--green); color: #fff; border: none; border-radius: var(--radius); padding: .6rem 1.2rem; font-size: .9rem; font-weight: 600; cursor: pointer; text-decoration: none; display: inline-block; transition: background .2s; }
+.btn-primary:hover { background: var(--green-dark); }
+.btn-secondary { background: none; border: 1px solid var(--border); color: var(--navy); border-radius: var(--radius); padding: .6rem 1.2rem; font-size: .9rem; font-weight: 500; cursor: pointer; text-decoration: none; display: inline-block; transition: border-color .2s; }
+.btn-secondary:hover { border-color: var(--navy); }
+.btn-ghost { background: none; border: 1px solid var(--border); color: var(--muted); border-radius: var(--radius); padding: .6rem 1.2rem; font-size: .9rem; cursor: pointer; }
+.btn-danger { background: none; border: 1px solid #e05252; color: #e05252; border-radius: var(--radius); padding: .6rem 1.2rem; font-size: .9rem; cursor: pointer; }
+.btn-danger:hover { background: #e05252; color: #fff; }
+.btn-sm { padding: .35rem .75rem; font-size: .78rem; }
+
+/* TABEL */
+.tabel-anggota { width: 100%; border-collapse: collapse; font-size: .85rem; }
+.tabel-anggota th { text-align: left; padding: .5rem .75rem; border-bottom: 2px solid var(--border); color: var(--muted); font-size: .78rem; }
+.tabel-anggota td { padding: .5rem .75rem; border-bottom: 1px solid var(--border); }
+
+/* MODAL */
+.modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 200; align-items: center; justify-content: center; padding: 1rem; }
+.modal-box { background: var(--white); border-radius: 12px; width: 100%; max-width: 600px; max-height: 80vh; display: flex; flex-direction: column; }
+.modal-header { display: flex; align-items: center; justify-content: space-between; padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border); }
+.modal-header h3 { font-size: 1rem; }
+.modal-header button { background: none; border: none; font-size: 1.1rem; cursor: pointer; color: var(--muted); }
+.modal-body { padding: 1.25rem 1.5rem; overflow-y: auto; }
