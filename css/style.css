@@ -92,3 +92,22 @@ button[type=submit]:disabled { opacity: .6; cursor: not-allowed; }
 .modal-header h3 { font-size: 1rem; }
 .modal-header button { background: none; border: none; font-size: 1.1rem; cursor: pointer; color: var(--muted); }
 .modal-body { padding: 1.25rem 1.5rem; overflow-y: auto; }
+
+/* MATERI */
+.materi-card { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+.materi-info { flex: 1; }
+.materi-tipe-wrap { display: flex; align-items: center; gap: .6rem; margin-bottom: .4rem; flex-wrap: wrap; }
+.materi-tipe-wrap h3 { font-size: .95rem; }
+.materi-tipe-badge { font-size: .68rem; font-weight: 700; padding: .2rem .5rem; border-radius: 4px; letter-spacing: .04em; }
+.tipe-teks  { background: #e8f5ee; color: #1F5938; }
+.tipe-pdf   { background: #fde8e8; color: #9b1c1c; }
+.tipe-mp3   { background: #e8eefb; color: #1a3a7a; }
+.tipe-link  { background: #fef3e2; color: #7a4f1a; }
+.materi-preview { font-size: .82rem; color: var(--muted); line-height: 1.5; }
+.materi-link { font-size: .82rem; color: var(--green); word-break: break-all; }
+.materi-actions { flex-shrink: 0; }
+.materi-teks { font-size: .9rem; line-height: 1.75; color: var(--text); white-space: pre-wrap; }
+
+/* PROGRESS */
+.progress-bar { background: var(--border); border-radius: 4px; height: 6px; margin-top: .75rem; overflow: hidden; }
+.progress-fill { background: var(--green); height: 100%; width: 0%; transition: width .3s; border-radius: 4px; }
