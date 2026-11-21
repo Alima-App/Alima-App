@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Alima Performance Panel</title>
+  <style>
+    :root {
+      --bg: #0f1117; --surface: #1a1d27; --border: #2a2d3a;
+      --green: #2D7A4F; --green-light: #3dab6e;
+      --red: #e05252; --yellow: #e0b352; --blue: #5289e0;
+      --text: #e2e8f0; --muted: #718096; --radius: 8px;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Courier New', monospace; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+    header {
+      background: var(--surface); border-bottom: 1px solid var(--border);
+      padding: 1rem 1.5rem; display: flex; align-items: center; gap: .75rem; flex-wrap: wrap;
+    }
+    .logo { font-weight: 700; color: var(--green-light); font-size: 1rem; letter-spacing:.05em; }
+    .badge { background: var(--blue); color: #fff; font-size: .68rem; padding: .2rem .5rem; border-radius: 4px; font-weight: 700; }
+    header p { font-size: .75rem; color: var(--muted); margin-left: auto; }
+
+    .layout { display: grid; grid-template-columns: 300px 1fr; min-height: calc(100vh - 57px); }
+
+    /* SIDEBAR */
+    .sidebar {
+      background: var(--surface); border-right: 1px solid var(--border);
+      padding: 1.25rem; display: flex; flex-direction: column; gap: 1.25rem; overflow-y: auto;
+    }
+    .sec-title { font-size: .68rem; font-weight: 700; color: var(--muted); letter-spacing:.08em; text-transform:uppercase; margin-bottom:.5rem; }
+    label { font-size: .75rem; color: var(--muted); display: block; margin-bottom: .3rem; }
+    input, select {
+      width: 100%; background: var(--bg); border: 1px solid var(--border);
+      border-radius: var(--radius); color: var(--text); padding: .45rem .65rem;
+      font-size: .78rem; font-family: 'Courier New', monospace; outline: none;
+    }
+    input:focus, select:focus { border-color: var(--green); }
+    .ig { margin-bottom: .65rem; }
+    .btn {
+      width: 100%; padding: .55rem 1rem; border: none; border-radius: var(--radius);
+      font-size: .82rem; font-weight: 700; cursor: pointer; font-family: 'Courier New', monospace;
+      transition: opacity .15s; margin-bottom: .4rem;
+    }
+    .btn:hover { opacity: .85; }
+    .btn:disabled { opacity: .4; cursor: not-allowed; }
+    .btn-green  { background: var(--green); color: #fff; }
+    .btn-blue   { background: var(--blue); color: #fff; }
+    .btn-yellow { background: var(--yellow); color: #000; }
+    .btn-red    { background: var(--red); color: #fff; }
+    .btn-ghost  { background: transparent; border: 1px solid var(--border); color: var(--muted); }
+    .divider { height: 1px; background: var(--border); }
+
+    /* MAIN */
+    .main { display: flex; flex-direction: column; overflow: hidden; }
+
+    /* TABS */
+    .tabs { display: flex; background: var(--surface); border-bottom: 1px solid var(--border); }
+    .tab {
+      padding: .65rem 1.25rem; font-size: .78rem; font-weight: 600; cursor: pointer;
+      color: var(--muted); border-bottom: 2px solid transparent; transition: color .15s;
+      background: none; border-top: none; border-left: none; border-right: none; font-family: 'Courier New', monospace;
+    }
+    .tab.active { color: var(--green-light); border-bottom-color: var(--green-light); }
+
+    .tab-content { display: none; flex: 1; overflow-y: auto; padding: 1.25rem; }
+    .tab-content.active { display: block; }
+
+    /* LOG */
+    .log-entry {
+      display: grid; grid-template-columns: auto auto 1fr;
+      gap: .4rem .65rem; align-items: start;
+      padding: .55rem .7rem; border-radius: var(--radius);
+      background: var(--surface); border: 1px solid var(--border);
+      font-size: .75rem; line-height: 1.5; margin-bottom: .4rem;
+    }
+    .log-entry.ok   { border-color: var(--green); }
+    .log-entry.err  { border-color: var(--red); }
+    .log-entry.warn { border-color: var(--yellow); }
+    .log-entry.info { border-color: var(--blue); }
+    .log-time { color: var(--muted); white-space: nowrap; }
+    .log-tag { font-size: .65rem; font-weight: 700; padding: .15rem .4rem; border-radius: 3px; white-space: nowrap; }
+    .tag-ok   { background: var(--green); color: #fff; }
+    .tag-err  { background: var(--red); color: #fff; }
+    .tag-warn { background: var(--yellow); color: #000; }
+    .tag-info { background: var(--blue); color: #fff; }
+    .log-msg { color: var(--text); word-break: break-all; }
+    .log-detail { grid-column: 2 / -1; color: var(--muted); font-size: .72rem; white-space: pre-wrap; word-break: break-all; }
+
+    /* METRIC CARDS */
+    .metrics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: .75rem; margin-bottom: 1.25rem; }
+    .metric-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: .9rem 1rem;
+    }
+    .metric-label { font-size: .68rem; color: var(--muted); margin-bottom: .3rem; }
+    .metric-value { font-size: 1.5rem; font-weight: 700; color: var(--text); line-height: 1; }
+    .metric-unit  { font-size: .7rem; color: var(--muted); margin-top: .2rem; }
+    .metric-card.ok   { border-color: var(--green); }
+    .metric-card.warn { border-color: var(--yellow); }
+    .metric-card.err  { border-color: var(--red); }
+
+    /* WATERFALL */
+    .waterfall { width: 100%; border-collapse: collapse; font-size: .75rem; }
+    .waterfall th { text-align: left; padding: .4rem .6rem; border-bottom: 1px solid var(--border); color: var(--muted); font-size: .68rem; white-space: nowrap; }
+    .waterfall td { padding: .4rem .6rem; border-bottom: 1px solid rgba(255,255,255,.04); vertical-align: middle; }
+    .waterfall tr:hover td { background: rgba(255,255,255,.03); }
+    .bar-wrap { background: rgba(255,255,255,.06); border-radius: 3px; height: 10px; min-width: 120px; position: relative; overflow: hidden; }
+    .bar-fill { height: 100%; border-radius: 3px; transition: width .3s; }
+    .bar-fast   { background: var(--green); }
+    .bar-medium { background: var(--yellow); }
+    .bar-slow   { background: var(--red); }
+    .dur-label { font-size: .7rem; color: var(--muted); margin-left: .4rem; white-space: nowrap; }
+
+    /* DIAGNOSIS */
+    .diag-item {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: .9rem 1rem; margin-bottom: .65rem;
+    }
+    .diag-item.ok   { border-left: 3px solid var(--green); }
+    .diag-item.warn { border-left: 3px solid var(--yellow); }
+    .diag-item.err  { border-left: 3px solid var(--red); }
+    .diag-title { font-weight: 700; font-size: .82rem; margin-bottom: .3rem; }
+    .diag-desc  { font-size: .75rem; color: var(--muted); line-height: 1.6; }
+    .diag-saran { font-size: .75rem; color: var(--green-light); margin-top: .4rem; }
+
+    .empty { text-align: center; padding: 3rem 1rem; color: var(--muted); font-size: .82rem; }
+    .empty .ico { font-size: 2rem; display: block; margin-bottom: .5rem; }
+
+    @media (max-width: 680px) {
+      .layout { grid-template-columns: 1fr; }
+      .sidebar { border-right: none; border-bottom: 1px solid var(--border); }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <span class="logo">ALIMA</span>
+  <span class="badge">PERF</span>
+  <p>Performance &amp; Latency Analyzer</p>
+</header>
+
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div>
+      <div class="sec-title">1 · Koneksi Supabase</div>
+      <div class="ig"><label>Project URL</label>
+        <input id="sb-url" type="text" placeholder="https://xxxx.supabase.co" /></div>
+      <div class="ig"><label>Publishable Key</label>
+        <input id="sb-key" type="text" placeholder="eyJ..." /></div>
+      <button class="btn btn-blue" id="btn-connect">Hubungkan</button>
+    </div>
+
+    <div class="divider"></div>
+
+    <div>
+      <div class="sec-title">2 · Jalankan Semua Tes</div>
+      <button class="btn btn-green" id="btn-run-all">▶ Jalankan Semua</button>
+      <button class="btn btn-ghost" id="btn-clear">Bersihkan Hasil</button>
+    </div>
+
+    <div class="divider"></div>
+
+    <div>
+      <div class="sec-title">3 · Tes Individual</div>
+      <button class="btn btn-yellow" id="btn-test-dns">DNS &amp; Koneksi Awal</button>
+      <button class="btn btn-yellow" id="btn-test-session">Supabase getSession()</button>
+      <button class="btn btn-yellow" id="btn-test-db">Query Database</button>
+      <button class="btn btn-yellow" id="btn-test-storage">Storage (cek bucket)</button>
+      <button class="btn btn-yellow" id="btn-test-rpc">RPC Function</button>
+      <button class="btn btn-yellow" id="btn-test-network">Kecepatan Jaringan</button>
+    </div>
+
+    <div class="divider"></div>
+
+    <div>
+      <div class="sec-title">4 · Simulasi Login Flow</div>
+      <div class="ig"><label>Email</label><input id="sim-email" type="email" placeholder="akun@test.com" /></div>
+      <div class="ig"><label>Password</label><input id="sim-pass" type="password" placeholder="password" /></div>
+      <button class="btn btn-green" id="btn-sim-login">Ukur Waktu Login</button>
+    </div>
+
+    <div class="divider"></div>
+
+    <div>
+      <div class="sec-title">Info</div>
+      <p style="font-size:.72rem;color:var(--muted);line-height:1.6">
+        &lt;200ms = Cepat ✓<br>
+        200–800ms = Sedang ⚠<br>
+        &gt;800ms = Lambat ✗<br><br>
+        Supabase gratis bisa lambat saat server "dingin" (tidak aktif &gt;7 hari).
+      </p>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+    <div class="tabs">
+      <button class="tab active" data-tab="dashboard">Dashboard</button>
+      <button class="tab" data-tab="waterfall">Waterfall</button>
+      <button class="tab" data-tab="diagnosis">Diagnosis</button>
+      <button class="tab" data-tab="log">Log</button>
+    </div>
+
+    <!-- DASHBOARD TAB -->
+    <div class="tab-content active" id="tab-dashboard">
+      <div class="metrics-grid" id="metrics-grid">
+        <div class="metric-card"><div class="metric-label">Status</div><div class="metric-value" id="m-status">—</div></div>
+        <div class="metric-card"><div class="metric-label">Koneksi Supabase</div><div class="metric-value" id="m-conn">—</div><div class="metric-unit">ms</div></div>
+        <div class="metric-card"><div class="metric-label">getSession()</div><div class="metric-value" id="m-session">—</div><div class="metric-unit">ms</div></div>
+        <div class="metric-card"><div class="metric-label">Query DB</div><div class="metric-value" id="m-db">—</div><div class="metric-unit">ms</div></div>
+        <div class="metric-card"><div class="metric-label">Storage</div><div class="metric-value" id="m-storage">—</div><div class="metric-unit">ms</div></div>
+        <div class="metric-card"><div class="metric-label">Total Login Flow</div><div class="metric-value" id="m-login">—</div><div class="metric-unit">ms</div></div>
+      </div>
+      <div id="dashboard-hint" class="empty"><span class="ico">⚡</span>Hubungkan Supabase lalu klik "Jalankan Semua"</div>
+    </div>
+
+    <!-- WATERFALL TAB -->
+    <div class="tab-content" id="tab-waterfall">
+      <div id="waterfall-wrap" class="empty"><span class="ico">📊</span>Belum ada data. Jalankan tes dulu.</div>
+    </div>
+
+    <!-- DIAGNOSIS TAB -->
+    <div class="tab-content" id="tab-diagnosis">
+      <div id="diag-wrap" class="empty"><span class="ico">🩺</span>Belum ada diagnosis. Jalankan tes dulu.</div>
+    </div>
+
+    <!-- LOG TAB -->
+    <div class="tab-content" id="tab-log">
+      <div id="log-area"><div class="empty"><span class="ico">📋</span>Log kosong.</div></div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+  const { createClient } = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/+esm');
+  let sb = null;
+  const results = [];
+
+  // ── TABS ─────────────────────────────────
+  document.querySelectorAll('.tab').forEach(t => {
+    t.addEventListener('click', () => {
+      document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(x => x.classList.remove('active'));
+      t.classList.add('active');
+      document.getElementById('tab-' + t.dataset.tab).classList.add('active');
+    });
+  });
+
+  // ── LOGGER ───────────────────────────────
+  function log(type, msg, detail = null) {
+    const area = document.getElementById('log-area');
+    const empty = area.querySelector('.empty');
+    if (empty) empty.remove();
+    const now = new Date().toTimeString().slice(0,8);
+    const map = { ok:'tag-ok ok', err:'tag-err err', warn:'tag-warn warn', info:'tag-info info' };
+    const [tagCls, entryCls] = (map[type] || map.info).split(' ');
+    const tagLabel = { ok:'OK', err:'ERR', warn:'WARN', info:'INFO' }[type] || 'INFO';
+    const el = document.createElement('div');
+    el.className = `log-entry ${entryCls}`;
+    el.innerHTML = `
+      <span class="log-time">${now}</span>
+      <span class="log-tag ${tagCls}">${tagLabel}</span>
+      <span class="log-msg">${msg}</span>
+      ${detail ? `<span class="log-detail">${typeof detail === 'object' ? JSON.stringify(detail, null, 2) : detail}</span>` : ''}
+    `;
+    area.appendChild(el);
+    area.scrollTop = area.scrollHeight;
+  }
+
+  // ── TIMER ────────────────────────────────
+  function timer() {
+    const t = performance.now();
+    return () => Math.round(performance.now() - t);
+  }
+
+  function colorClass(ms) {
+    if (ms < 200) return 'ok';
+    if (ms < 800) return 'warn';
+    return 'err';
+  }
+
+  function barClass(ms) {
+    if (ms < 200) return 'bar-fast';
+    if (ms < 800) return 'bar-medium';
+    return 'bar-slow';
+  }
+
+  function setMetric(id, val, unit = 'ms') {
+    const el = document.getElementById('m-' + id);
+    if (!el) return;
+    el.textContent = val === null ? 'Error' : val;
+    const card = el.closest('.metric-card');
+    card.className = 'metric-card ' + (val === null ? 'err' : colorClass(val));
+  }
+
+  // ── HUBUNGKAN ────────────────────────────
+  document.getElementById('btn-connect').addEventListener('click', () => {
+    const url = document.getElementById('sb-url').value.trim();
+    const key = document.getElementById('sb-key').value.trim();
+    if (!url || !key) { log('err', 'URL dan key wajib diisi.'); return; }
+    if (!url.startsWith('https://')) { log('err', 'URL harus diawali https://'); return; }
+    sb = createClient(url, key);
+    log('ok', `Klien dibuat → ${url}`);
+    document.getElementById('m-status').textContent = 'Siap';
+    document.getElementById('m-status').closest('.metric-card').className = 'metric-card ok';
+  });
+
+  // ── TES INDIVIDUAL ───────────────────────
+
+  async function testDNS() {
+    log('info', 'Mengukur DNS & koneksi awal ke Supabase REST...');
+    const url = document.getElementById('sb-url').value.trim();
+    if (!url) { log('warn', 'Isi URL dulu.'); return null; }
+    const t = timer();
+    try {
+      await fetch(url + '/rest/v1/', { method: 'GET', mode: 'no-cors' });
+      const ms = t();
+      log('ok', `DNS + koneksi awal: ${ms}ms`, ms > 800 ? 'Lambat — server mungkin dingin atau koneksi internet terbatas.' : ms > 200 ? 'Sedang — bisa jadi jarak server jauh.' : 'Cepat ✓');
+      setMetric('conn', ms);
+      return ms;
+    } catch(e) {
+      const ms = t();
+      log('warn', `Fetch no-cors selesai (${ms}ms) — no-cors tidak bisa baca error, ini normal.`);
+      setMetric('conn', ms);
+      return ms;
+    }
+  }
+
+  async function testSession() {
+    if (!sb) { log('warn', 'Hubungkan Supabase dulu.'); return null; }
+    log('info', 'Mengukur supabase.auth.getSession()...');
+    const t = timer();
+    const { data, error } = await sb.auth.getSession();
+    const ms = t();
+    if (error) { log('err', `getSession error: ${error.message}`, ms + 'ms'); setMetric('session', null); return null; }
+    log(ms < 200 ? 'ok' : ms < 800 ? 'warn' : 'err',
+      `getSession(): ${ms}ms — session ${data.session ? 'ADA' : 'tidak ada (belum login)'}`,
+      ms > 500 ? 'Lambat. Kemungkinan: server dingin, atau koneksi lambat.' : null);
+    setMetric('session', ms);
+    return ms;
+  }
+
+  async function testDB() {
+    if (!sb) { log('warn', 'Hubungkan Supabase dulu.'); return null; }
+    log('info', 'Mengukur query ke tabel profiles...');
+    const t = timer();
+    const { error } = await sb.from('profiles').select('id').limit(1);
+    const ms = t();
+    if (error && error.code !== 'PGRST301' && error.code !== '42501') {
+      log('err', `Query DB error: ${error.message}`, ms + 'ms');
+      setMetric('db', null); return null;
+    }
+    log(ms < 200 ? 'ok' : ms < 800 ? 'warn' : 'err',
+      `Query DB (profiles): ${ms}ms`,
+      error ? `RLS menolak (normal untuk anon) — ${ms}ms` : null);
+    setMetric('db', ms);
+    return ms;
+  }
+
+  async function testStorage() {
+    if (!sb) { log('warn', 'Hubungkan Supabase dulu.'); return null; }
+    log('info', 'Mengukur akses Supabase Storage...');
+    const t = timer();
+    const { error } = await sb.storage.from('materi-files').list('', { limit: 1 });
+    const ms = t();
+    if (error && !error.message.includes('not found') && !error.message.includes('The resource was not found')) {
+      log('warn', `Storage: ${error.message} (${ms}ms)`);
+    } else {
+      log(ms < 200 ? 'ok' : ms < 800 ? 'warn' : 'err', `Storage response: ${ms}ms`);
+    }
+    setMetric('storage', ms);
+    return ms;
+  }
+
+  async function testRPC() {
+    if (!sb) { log('warn', 'Hubungkan Supabase dulu.'); return null; }
+    log('info', 'Mengukur RPC cari_kelas_by_kode...');
+    const t = timer();
+    const { error } = await sb.rpc('cari_kelas_by_kode', { p_kode: 'TEST00' });
+    const ms = t();
+    if (error && !error.message.includes('Could not find')) {
+      log('warn', `RPC: ${error.message} (${ms}ms)`);
+    } else {
+      log(ms < 200 ? 'ok' : ms < 800 ? 'warn' : 'err', `RPC cari_kelas_by_kode: ${ms}ms`);
+    }
+    return ms;
+  }
+
+  async function testNetwork() {
+    log('info', 'Mengukur latensi jaringan ke beberapa endpoint...');
+    const endpoints = [
+      { label: 'Google', url: 'https://www.google.com/favicon.ico' },
+      { label: 'Cloudflare', url: 'https://1.1.1.1/favicon.ico' },
+      { label: 'jsDelivr CDN', url: 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/+esm' },
+    ];
+    for (const ep of endpoints) {
+      const t = timer();
+      try {
+        await fetch(ep.url, { mode: 'no-cors', cache: 'no-store' });
+        const ms = t();
+        log(ms < 300 ? 'ok' : 'warn', `${ep.label}: ${ms}ms`);
+      } catch(e) {
+        log('warn', `${ep.label}: tidak bisa diukur (CORS) — abaikan.`);
+      }
+    }
+  }
+
+  // ── LOGIN FLOW SIMULATOR ──────────────────
+  async function simLogin() {
+    if (!sb) { log('warn', 'Hubungkan Supabase dulu.'); return; }
+    const email = document.getElementById('sim-email').value.trim();
+    const pass  = document.getElementById('sim-pass').value;
+    if (!email || !pass) { log('warn', 'Isi email dan password untuk simulasi.'); return; }
+
+    log('info', `Memulai simulasi login flow untuk: ${email}`);
+    const steps = [];
+
+    // Step 1: signIn
+    let t = timer();
+    const { data: authData, error: authErr } = await sb.auth.signInWithPassword({ email, password: pass });
+    const msAuth = t();
+    steps.push({ label: 'signInWithPassword()', ms: msAuth, ok: !authErr });
+    if (authErr) {
+      log('err', `Login gagal: ${authErr.message} (${msAuth}ms)`);
+      setMetric('login', null);
+      renderWaterfall(steps);
+      return;
+    }
+    log(colorMs(msAuth), `signInWithPassword(): ${msAuth}ms`);
+
+    // Step 2: getSession
+    t = timer();
+    await sb.auth.getSession();
+    const msSess = t();
+    steps.push({ label: 'getSession() setelah login', ms: msSess, ok: true });
+    log(colorMs(msSess), `getSession() setelah login: ${msSess}ms`);
+
+    // Step 3: query profiles
+    t = timer();
+    const { error: profErr } = await sb.from('profiles').select('*').eq('id', authData.user.id).single();
+    const msProf = t();
+    steps.push({ label: 'Query profiles (getProfile)', ms: msProf, ok: !profErr });
+    log(profErr ? 'err' : colorMs(msProf), `Query profiles: ${msProf}ms${profErr ? ' — ' + profErr.message : ''}`);
+
+    // Step 4: render simulasi (hanya hitung DOM)
+    t = timer();
+    const dummy = document.createElement('div');
+    dummy.innerHTML = `<div>${'x'.repeat(5000)}</div>`;
+    document.body.appendChild(dummy);
+    document.body.removeChild(dummy);
+    const msRender = t();
+    steps.push({ label: 'Render DOM (estimasi)', ms: msRender, ok: true });
+    log(colorMs(msRender), `Render DOM estimasi: ${msRender}ms`);
+
+    const total = msAuth + msSess + msProf + msRender;
+    setMetric('login', total);
+    log(total < 1000 ? 'ok' : total < 2000 ? 'warn' : 'err',
+      `Total login flow: ${total}ms`,
+      total > 2000 ? 'Lambat. Lihat tab Diagnosis untuk saran.' : null);
+
+    renderWaterfall(steps);
+    renderDiagnosis(steps, total);
+
+    // Logout supaya tidak ganggu sesi
+    await sb.auth.signOut();
+  }
+
+  function colorMs(ms) { return ms < 200 ? 'ok' : ms < 800 ? 'warn' : 'err'; }
+
+  // ── WATERFALL ────────────────────────────
+  function renderWaterfall(steps) {
+    const max = Math.max(...steps.map(s => s.ms), 1);
+    const wrap = document.getElementById('waterfall-wrap');
+    wrap.className = '';
+    wrap.innerHTML = `
+      <table class="waterfall">
+        <thead><tr><th>Langkah</th><th>Durasi</th><th style="width:200px">Bar</th><th>Status</th></tr></thead>
+        <tbody>
+          ${steps.map(s => `
+            <tr>
+              <td>${s.label}</td>
+              <td style="color:${s.ms < 200 ? 'var(--green-light)' : s.ms < 800 ? 'var(--yellow)' : 'var(--red)'};font-weight:700">${s.ms}ms</td>
+              <td>
+                <div style="display:flex;align-items:center;gap:.4rem">
+                  <div class="bar-wrap" style="flex:1">
+                    <div class="bar-fill ${barClass(s.ms)}" style="width:${Math.round((s.ms/max)*100)}%"></div>
+                  </div>
+                </div>
+              </td>
+              <td>${s.ok ? '✓' : '✗'}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    `;
+
+    // Pindah ke tab waterfall
+    document.querySelector('[data-tab="waterfall"]').click();
+  }
+
+  // ── DIAGNOSIS ────────────────────────────
+  function renderDiagnosis(steps, total) {
+    const wrap = document.getElementById('diag-wrap');
+    wrap.className = '';
+    const items = [];
+
+    // Cek auth lambat
+    const auth = steps.find(s => s.label.includes('signIn'));
+    if (auth && auth.ms > 1500) {
+      items.push({ type: 'err', title: `Auth sangat lambat (${auth.ms}ms)`,
+        desc: 'signInWithPassword() membutuhkan waktu sangat lama. Kemungkinan server Supabase sedang "dingin" (tidak ada aktivitas beberapa hari).',
+        saran: '→ Solusi: Buka dashboard Supabase dan klik proyek untuk "membangunkan" server. Atau aktifkan Schedule ping otomatis (lihat tab Log).' });
+    } else if (auth && auth.ms > 500) {
+      items.push({ type: 'warn', title: `Auth agak lambat (${auth.ms}ms)`,
+        desc: 'Waktu login di atas 500ms. Bisa disebabkan jarak ke server Singapore atau koneksi internet.',
+        saran: '→ Pertimbangkan caching session di localStorage agar tidak perlu login ulang setiap refresh.' });
+    } else if (auth) {
+      items.push({ type: 'ok', title: `Auth cepat (${auth.ms}ms)`, desc: 'Waktu signIn normal.', saran: null });
+    }
+
+    // Cek query DB
+    const db = steps.find(s => s.label.includes('profiles'));
+    if (db && db.ms > 500) {
+      items.push({ type: 'warn', title: `Query profiles lambat (${db.ms}ms)`,
+        desc: 'Membaca tabel profiles membutuhkan waktu lama. Bisa karena RLS policy yang kompleks atau koneksi lambat.',
+        saran: '→ Pastikan kolom id di tabel profiles sudah terindeks. Di SQL Editor jalankan: CREATE INDEX IF NOT EXISTS idx_profiles_id ON profiles(id);' });
+    } else if (db) {
+      items.push({ type: 'ok', title: `Query DB cepat (${db.ms}ms)`, desc: 'Performa query normal.', saran: null });
+    }
+
+    // Cek total
+    if (total > 3000) {
+      items.push({ type: 'err', title: `Total flow sangat lambat (${total}ms)`,
+        desc: 'Keseluruhan proses login hingga siap render membutuhkan lebih dari 3 detik. Ini yang dirasakan pengguna sebagai "halaman lama memuat".',
+        saran: '→ Prioritas: (1) Cache session di memori/localStorage, (2) Tampilkan skeleton loading, (3) Parallelkan getSession + preload data kelas.' });
+    } else if (total > 1500) {
+      items.push({ type: 'warn', title: `Total flow sedang (${total}ms)`,
+        desc: `Total ${total}ms masih bisa diterima tapi terasa sedikit lambat di koneksi lambat.`,
+        saran: '→ Tambahkan skeleton loading dan cache session agar tidak perlu reload dari nol setiap pindah halaman.' });
+    } else {
+      items.push({ type: 'ok', title: `Total flow baik (${total}ms)`, desc: 'Performa keseluruhan sudah cukup baik.', saran: null });
+    }
+
+    // Rekomendasi umum
+    items.push({ type: 'info', title: 'Tips: Cache session di memori',
+      desc: 'Setiap navigate() memanggil getSession() ke server. Simpan hasilnya di variabel modul agar hanya 1x request per sesi.',
+      saran: '→ Sudah diimplementasikan di auth.js versi terbaru (variabel _sessionCache dan _profileCache).' });
+
+    items.push({ type: 'info', title: 'Tips: Supabase gratis bisa "dingin"',
+      desc: 'Proyek gratis Supabase dijeda otomatis jika tidak aktif ~7 hari. Request pertama bisa lambat 3–5 detik.',
+      saran: '→ Siasati dengan ping scheduled: buat GitHub Action yang fetch ke endpoint Supabase setiap hari.' });
+
+    wrap.innerHTML = items.map(item => `
+      <div class="diag-item ${item.type === 'info' ? 'ok' : item.type}">
+        <div class="diag-title">${item.type === 'ok' ? '✓' : item.type === 'warn' ? '⚠' : item.type === 'err' ? '✗' : 'ℹ'} ${item.title}</div>
+        <div class="diag-desc">${item.desc}</div>
+        ${item.saran ? `<div class="diag-saran">${item.saran}</div>` : ''}
+      </div>
+    `).join('');
+
+    document.querySelector('[data-tab="diagnosis"]').click();
+  }
+
+  // ── RUN ALL ──────────────────────────────
+  document.getElementById('btn-run-all').addEventListener('click', async () => {
+    if (!sb) { log('warn', 'Hubungkan Supabase dulu.'); return; }
+    log('info', '── Memulai semua tes ──');
+    document.getElementById('dashboard-hint').style.display = 'none';
+    await testDNS();
+    await testSession();
+    await testDB();
+    await testStorage();
+    await testRPC();
+    await testNetwork();
+    log('ok', '── Semua tes selesai. Jalankan simulasi login untuk waterfall & diagnosis lengkap. ──');
+  });
+
+  // ── INDIVIDUAL ───────────────────────────
+  document.getElementById('btn-test-dns').addEventListener('click', testDNS);
+  document.getElementById('btn-test-session').addEventListener('click', testSession);
+  document.getElementById('btn-test-db').addEventListener('click', testDB);
+  document.getElementById('btn-test-storage').addEventListener('click', testStorage);
+  document.getElementById('btn-test-rpc').addEventListener('click', testRPC);
+  document.getElementById('btn-test-network').addEventListener('click', testNetwork);
+  document.getElementById('btn-sim-login').addEventListener('click', simLogin);
+
+  document.getElementById('btn-clear').addEventListener('click', () => {
+    document.getElementById('log-area').innerHTML = '<div class="empty"><span class="ico">📋</span>Log kosong.</div>';
+    document.getElementById('waterfall-wrap').innerHTML = '<div class="empty"><span class="ico">📊</span>Belum ada data.</div>';
+    document.getElementById('diag-wrap').innerHTML = '<div class="empty"><span class="ico">🩺</span>Belum ada diagnosis.</div>';
+    ['conn','session','db','storage','login'].forEach(id => {
+      const el = document.getElementById('m-' + id);
+      if (el) { el.textContent = '—'; el.closest('.metric-card').className = 'metric-card'; }
+    });
+  });
+</script>
+</body>
+</html>
