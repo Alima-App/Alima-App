@@ -2,8 +2,8 @@ import { getProfile } from './auth.js';
 import { renderLogin } from './pages/login.js';
 import { renderDashboardDosen } from './pages/dashboard-dosen.js';
 import { renderDashboardMahasiswa } from './pages/dashboard-mahasiswa.js';
-import { renderKelas } from './pages/kelas.js'; // ← tambah ini
-import { renderMateri } from './pages/materi.js'; // ← tambah
+import { renderKelas } from './pages/kelas.js';
+import { renderMateri } from './pages/materi.js';
 
 const app = document.getElementById('app');
 
@@ -11,7 +11,6 @@ export async function navigate() {
   const hash = window.location.hash || '#/login';
   const profile = await getProfile();
 
-  // Halaman yang butuh login
   const protected_routes = ['#/dashboard', '#/kelas', '#/materi', '#/tugas', '#/nilai'];
   const is_protected = protected_routes.some(r => hash.startsWith(r));
 
@@ -22,8 +21,9 @@ export async function navigate() {
 
   if (hash === '#/login' || hash === '#/daftar') {
     if (profile) {
-      // Sudah login, redirect ke dashboard sesuai peran
-      window.location.hash = profile.peran === 'dosen' ? '#/dashboard-dosen' : '#/dashboard-mahasiswa';
+      window.location.hash = profile.peran === 'dosen'
+        ? '#/dashboard-dosen'
+        : '#/dashboard-mahasiswa';
       return;
     }
     renderLogin(app, hash === '#/daftar');
@@ -42,13 +42,26 @@ export async function navigate() {
     return;
   }
 
-  if (hash.startsWith('#/materi')) {
-  renderMateri(app);
-  return;
+  if (hash.startsWith('#/kelas')) {
+    renderKelas(app);
+    return;
   }
 
-  // Fallback
-  app.innerHTML = '<p style="padding:2rem">Halaman tidak ditemukan.</p>';
+  if (hash.startsWith('#/materi')) {
+    renderMateri(app);
+    return;
+  }
+
+  // Halaman belum dibuat (tugas, nilai)
+  app.innerHTML = `
+    <div class="page-wrap">
+      <p class="back-link" style="margin-bottom:1rem">
+        <a href="${profile?.peran === 'dosen' ? '#/dashboard-dosen' : '#/dashboard-mahasiswa'}"
+          class="back-link">← Dashboard</a>
+      </p>
+      <div class="empty-state">Halaman ini sedang dalam pengerjaan.</div>
+    </div>
+  `;
 }
 
 window.addEventListener('hashchange', navigate);
