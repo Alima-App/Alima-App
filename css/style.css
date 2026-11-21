@@ -111,3 +111,14 @@ button[type=submit]:disabled { opacity: .6; cursor: not-allowed; }
 /* PROGRESS */
 .progress-bar { background: var(--border); border-radius: 4px; height: 6px; margin-top: .75rem; overflow: hidden; }
 .progress-fill { background: var(--green); height: 100%; width: 0%; transition: width .3s; border-radius: 4px; }
+
+/* SPINNER */
+.spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid var(--border);
+  border-top-color: var(--green);
+  border-radius: 50%;
+  animation: spin .7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
