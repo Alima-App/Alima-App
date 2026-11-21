@@ -7,7 +7,18 @@ import { renderMateri } from './pages/materi.js';
 
 const app = document.getElementById('app');
 
+function showLoading() {
+  app.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:center;min-height:100vh;flex-direction:column;gap:1rem">
+      <div class="spinner"></div>
+      <p style="color:var(--muted);font-size:.85rem">Memuat...</p>
+    </div>
+  `;
+}
+
 export async function navigate() {
+  showLoading();
+
   const hash = window.location.hash || '#/login';
   const profile = await getProfile();
 
@@ -52,14 +63,10 @@ export async function navigate() {
     return;
   }
 
-  // Halaman belum dibuat (tugas, nilai)
   app.innerHTML = `
     <div class="page-wrap">
-      <p class="back-link" style="margin-bottom:1rem">
-        <a href="${profile?.peran === 'dosen' ? '#/dashboard-dosen' : '#/dashboard-mahasiswa'}"
-          class="back-link">← Dashboard</a>
-      </p>
-      <div class="empty-state">Halaman ini sedang dalam pengerjaan.</div>
+      <a href="${profile?.peran === 'dosen' ? '#/dashboard-dosen' : '#/dashboard-mahasiswa'}" class="back-link">← Dashboard</a>
+      <div class="empty-state" style="margin-top:1rem">Halaman ini sedang dalam pengerjaan.</div>
     </div>
   `;
 }
