@@ -3,7 +3,7 @@ import { renderLogin } from './pages/login.js';
 import { renderDashboardDosen } from './pages/dashboard-dosen.js';
 import { renderDashboardMahasiswa } from './pages/dashboard-mahasiswa.js';
 import { renderKelas } from './pages/kelas.js'; // ← tambah ini
-
+import { renderMateri } from './pages/materi.js'; // ← tambah
 
 const app = document.getElementById('app');
 
@@ -40,6 +40,11 @@ export async function navigate() {
     if (profile?.peran !== 'mahasiswa') { window.location.hash = '#/login'; return; }
     renderDashboardMahasiswa(app, profile);
     return;
+  }
+
+  if (hash.startsWith('#/materi')) {
+  renderMateri(app);
+  return;
   }
 
   // Fallback
