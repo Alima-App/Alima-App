@@ -4,9 +4,15 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Alima App</title>
+  <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
-  <h1>Alima App</h1>
-  <p>Tahap 0 — setup berhasil.</p>
+  <div id="app">
+    <p style="padding:2rem;color:#888">Memuat...</p>
+  </div>
+  <script type="module">
+    import { navigate } from './js/router.js';
+    navigate();
+  </script>
 </body>
 </html>
