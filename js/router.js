@@ -6,6 +6,7 @@ import { renderKelas } from './pages/kelas.js';
 import { renderMateri } from './pages/materi.js';
 
 const app = document.getElementById('app');
+let isFirstLoad = true;
 
 function showLoading() {
   app.innerHTML = `
@@ -16,6 +17,43 @@ function showLoading() {
       <div class="skeleton" style="width:100%;height:80px"></div>
     </div>
   `;
+}
+
+function showLoading() {
+  if (isFirstLoad) {
+    // Splash screen hanya saat pertama buka
+    app.innerHTML = `
+      <div style="
+        display:flex;flex-direction:column;
+        align-items:center;justify-content:center;
+        min-height:100vh;gap:1.25rem;background:var(--white)
+      ">
+        <div style="
+          font-family:'Playfair Display',serif;
+          font-size:2.5rem;font-weight:900;
+          color:var(--navy);letter-spacing:-0.02em
+        ">
+          Ali<span style="color:var(--green)">ma</span>
+        </div>
+        <div class="spinner"></div>
+        <p style="color:var(--muted);font-size:.78rem;letter-spacing:.06em;text-transform:uppercase">
+          Menyiapkan kelas...
+        </p>
+      </div>
+    `;
+    isFirstLoad = false;
+  } else {
+    // Skeleton saat navigasi antar halaman
+    app.innerHTML = `
+      <div class="page-wrap" style="max-width:900px;margin:0 auto;padding:2rem 5%">
+        <div class="skeleton" style="width:120px;height:16px;margin-bottom:1.5rem;border-radius:6px"></div>
+        <div class="skeleton" style="width:200px;height:28px;margin-bottom:2rem;border-radius:6px"></div>
+        <div class="skeleton" style="width:100%;height:88px;margin-bottom:.75rem;border-radius:10px"></div>
+        <div class="skeleton" style="width:100%;height:88px;margin-bottom:.75rem;border-radius:10px"></div>
+        <div class="skeleton" style="width:80%;height:88px;border-radius:10px"></div>
+      </div>
+    `;
+  }
 }
 
 export async function navigate() {
