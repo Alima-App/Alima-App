@@ -1,40 +1,58 @@
 import { supabase } from './supabase.js';
 
-// Cache session di memori supaya tidak request ulang tiap halaman
-let _sessionCache = null;
 let _profileCache = null;
 
 export async function getSession() {
-  if (_sessionCache) return _sessionCache;
+  // Supabase sudah otomatis cache session di localStorage,
+  // jadi getSession() lokal hampir 0ms jika sudah login sebelumnya
   const { data } = await supabase.auth.getSession();
-  _sessionCache = data.session;
-  return _sessionCache;
+  return data.session;
 }
 
 export async function getProfile() {
   if (_profileCache) return _profileCache;
+
   const session = await getSession();
   if (!session) return null;
+
+  // Coba ambil dari localStorage dulu
+  const cacheKey = 'alima_profile_' + session.user.id;
+  const cached = localStorage.getItem(cacheKey);
+  if (cached) {
+    try {
+      _profileCache = JSON.parse(cached);
+      return _profileCache;
+    } catch(e) {}
+  }
+
+  // Kalau tidak ada, fetch dari DB
   const { data } = await supabase
     .from('profiles')
     .select('*')
     .eq('id', session.user.id)
     .single();
-  _profileCache = data;
+
+  if (data) {
+    _profileCache = data;
+    localStorage.setItem(cacheKey, JSON.stringify(data));
+  }
+
   return _profileCache;
 }
 
 export async function logout() {
-  _sessionCache = null;
+  // Bersihkan cache saat logout
+  const session = await getSession();
+  if (session) {
+    localStorage.removeItem('alima_profile_' + session.user.id);
+  }
   _profileCache = null;
   await supabase.auth.signOut();
   window.location.hash = '#/login';
 }
 
-// Reset cache kalau session berubah (login/logout)
 supabase.auth.onAuthStateChange((event) => {
-  if (event === 'SIGNED_OUT' || event === 'SIGNED_IN') {
-    _sessionCache = null;
+  if (event === 'SIGNED_OUT') {
     _profileCache = null;
   }
 });
