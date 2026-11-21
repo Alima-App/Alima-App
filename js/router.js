@@ -9,9 +9,11 @@ const app = document.getElementById('app');
 
 function showLoading() {
   app.innerHTML = `
-    <div style="display:flex;align-items:center;justify-content:center;min-height:100vh;flex-direction:column;gap:1rem">
-      <div class="spinner"></div>
-      <p style="color:var(--muted);font-size:.85rem">Memuat...</p>
+    <div class="page-wrap" style="max-width:900px;margin:0 auto;padding:2rem 5%">
+      <div class="skeleton" style="width:160px;height:20px;margin-bottom:2rem"></div>
+      <div class="skeleton" style="width:100%;height:80px;margin-bottom:1rem"></div>
+      <div class="skeleton" style="width:100%;height:80px;margin-bottom:1rem"></div>
+      <div class="skeleton" style="width:100%;height:80px"></div>
     </div>
   `;
 }
