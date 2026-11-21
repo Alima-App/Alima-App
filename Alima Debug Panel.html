@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Alima Debug Panel</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --border: #2a2d3a;
+      --green: #2D7A4F;
+      --green-light: #3dab6e;
+      --red: #e05252;
+      --yellow: #e0b352;
+      --blue: #5289e0;
+      --text: #e2e8f0;
+      --muted: #718096;
+      --radius: 8px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Courier New', monospace; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 1rem 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+    .logo { font-weight: 700; font-size: 1rem; color: var(--green-light); letter-spacing: .05em; }
+    .badge { background: var(--red); color: #fff; font-size: .7rem; padding: .2rem .5rem; border-radius: 4px; font-weight: 700; }
+    header p { font-size: .78rem; color: var(--muted); margin-left: auto; }
+
+    .layout { display: grid; grid-template-columns: 320px 1fr; min-height: calc(100vh - 57px); }
+
+    /* SIDEBAR */
+    .sidebar {
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .section-title {
+      font-size: .7rem;
+      font-weight: 700;
+      color: var(--muted);
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      margin-bottom: .6rem;
+    }
+
+    label { font-size: .78rem; color: var(--muted); display: block; margin-bottom: .3rem; }
+    input, select {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      padding: .5rem .7rem;
+      font-size: .82rem;
+      font-family: 'Courier New', monospace;
+      outline: none;
+    }
+    input:focus, select:focus { border-color: var(--green); }
+    .input-group { margin-bottom: .75rem; }
+
+    .btn {
+      width: 100%;
+      padding: .6rem 1rem;
+      border: none;
+      border-radius: var(--radius);
+      font-size: .85rem;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: 'Courier New', monospace;
+      transition: opacity .15s;
+    }
+    .btn:hover { opacity: .85; }
+    .btn:disabled { opacity: .4; cursor: not-allowed; }
+    .btn-green { background: var(--green); color: #fff; }
+    .btn-blue { background: var(--blue); color: #fff; }
+    .btn-yellow { background: var(--yellow); color: #000; }
+    .btn-red { background: var(--red); color: #fff; }
+    .btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--muted); }
+    .btn-sm { width: auto; padding: .35rem .75rem; font-size: .75rem; }
+
+    .divider { height: 1px; background: var(--border); }
+
+    /* MAIN */
+    .main { display: flex; flex-direction: column; }
+
+    .toolbar {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: .75rem 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: .75rem;
+      flex-wrap: wrap;
+    }
+    .toolbar span { font-size: .78rem; color: var(--muted); }
+    #status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); display: inline-block; }
+    #status-dot.ok { background: var(--green-light); }
+    #status-dot.err { background: var(--red); }
+    #status-text { font-size: .78rem; color: var(--muted); }
+
+    .log-area {
+      flex: 1;
+      padding: 1.25rem;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: .5rem;
+    }
+
+    .log-entry {
+      display: grid;
+      grid-template-columns: auto auto 1fr;
+      gap: .5rem .75rem;
+      align-items: start;
+      padding: .6rem .75rem;
+      border-radius: var(--radius);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      font-size: .78rem;
+      line-height: 1.5;
+    }
+    .log-entry.success { border-color: var(--green); }
+    .log-entry.error { border-color: var(--red); }
+    .log-entry.info { border-color: var(--blue); }
+    .log-entry.warn { border-color: var(--yellow); }
+
+    .log-time { color: var(--muted); white-space: nowrap; }
+    .log-tag {
+      font-size: .68rem;
+      font-weight: 700;
+      padding: .15rem .4rem;
+      border-radius: 4px;
+      white-space: nowrap;
+      align-self: start;
+    }
+    .tag-ok { background: var(--green); color: #fff; }
+    .tag-err { background: var(--red); color: #fff; }
+    .tag-info { background: var(--blue); color: #fff; }
+    .tag-warn { background: var(--yellow); color: #000; }
+
+    .log-msg { word-break: break-all; color: var(--text); }
+    .log-detail { grid-column: 2 / -1; color: var(--muted); font-size: .74rem; white-space: pre-wrap; word-break: break-all; }
+
+    .empty-state {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: var(--muted);
+      gap: .5rem;
+      font-size: .85rem;
+    }
+    .empty-state .big { font-size: 2rem; }
+
+    @media (max-width: 700px) {
+      .layout { grid-template-columns: 1fr; }
+      .sidebar { border-right: none; border-bottom: 1px solid var(--border); }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <span class="logo">ALIMA</span>
+  <span class="badge">DEBUG</span>
+  <p>Jalankan langkah satu per satu · lihat log di kanan</p>
+</header>
+
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+
+    <!-- Koneksi -->
+    <div>
+      <div class="section-title">1 · Koneksi Supabase</div>
+      <div class="input-group">
+        <label>Project URL</label>
+        <input type="text" id="sb-url" placeholder="https://xxxx.supabase.co" />
+      </div>
+      <div class="input-group">
+        <label>Publishable Key (anon)</label>
+        <input type="text" id="sb-key" placeholder="eyJ..." />
+      </div>
+      <button class="btn btn-blue" id="btn-connect">Hubungkan</button>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Cek Trigger -->
+    <div>
+      <div class="section-title">2 · Cek Trigger & Tabel</div>
+      <button class="btn btn-yellow" id="btn-check-trigger">Cek trigger on_auth_user_created</button>
+      <br/><br/>
+      <button class="btn btn-yellow" id="btn-check-table">Cek tabel profiles</button>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Daftar Akun -->
+    <div>
+      <div class="section-title">3 · Uji Daftar Akun</div>
+      <div class="input-group">
+        <label>Nama</label>
+        <input type="text" id="reg-nama" placeholder="Nama Dosen" value="Dosen Test" />
+      </div>
+      <div class="input-group">
+        <label>Peran</label>
+        <select id="reg-peran">
+          <option value="dosen">dosen</option>
+          <option value="mahasiswa">mahasiswa</option>
+        </select>
+      </div>
+      <div class="input-group">
+        <label>Email</label>
+        <input type="email" id="reg-email" placeholder="test@contoh.com" value="debug@alima.test" />
+      </div>
+      <div class="input-group">
+        <label>Password</label>
+        <input type="password" id="reg-password" placeholder="min. 6 karakter" value="debug123" />
+      </div>
+      <button class="btn btn-green" id="btn-register">Daftar & Uji</button>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Lihat Profiles -->
+    <div>
+      <div class="section-title">4 · Lihat Tabel Profiles</div>
+      <button class="btn btn-ghost" id="btn-read-profiles">Baca profiles</button>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Clear -->
+    <div>
+      <div class="section-title">Log</div>
+      <button class="btn btn-ghost btn-sm" id="btn-clear">Bersihkan log</button>
+    </div>
+
+  </div>
+
+  <!-- MAIN LOG -->
+  <div class="main">
+    <div class="toolbar">
+      <span id="status-dot"></span>
+      <span id="status-text">Belum terhubung</span>
+      <span style="margin-left:auto;font-size:.75rem;color:var(--muted)" id="log-count">0 entri</span>
+    </div>
+    <div class="log-area" id="log-area">
+      <div class="empty-state">
+        <span class="big">🔍</span>
+        <span>Isi URL & key Supabase, lalu klik Hubungkan</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script type="module">
+  // ── CDN Supabase ──────────────────────────────────────────────
+  const { createClient } = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/+esm');
+
+  let supabase = null;
+  let logCount = 0;
+
+  // ── Logger ────────────────────────────────────────────────────
+  function log(type, msg, detail = null) {
+    const area = document.getElementById('log-area');
+    const empty = area.querySelector('.empty-state');
+    if (empty) empty.remove();
+
+    logCount++;
+    document.getElementById('log-count').textContent = `${logCount} entri`;
+
+    const now = new Date();
+    const time = now.toTimeString().slice(0,8);
+
+    const tagMap = {
+      success: { cls: 'tag-ok',  label: 'OK',   entry: 'success' },
+      error:   { cls: 'tag-err', label: 'ERROR', entry: 'error'   },
+      info:    { cls: 'tag-info',label: 'INFO',  entry: 'info'    },
+      warn:    { cls: 'tag-warn',label: 'WARN',  entry: 'warn'    },
+    };
+    const t = tagMap[type] || tagMap.info;
+
+    const el = document.createElement('div');
+    el.className = `log-entry ${t.entry}`;
+    el.innerHTML = `
+      <span class="log-time">${time}</span>
+      <span class="log-tag ${t.cls}">${t.label}</span>
+      <span class="log-msg">${msg}</span>
+      ${detail ? `<span class="log-detail">${typeof detail === 'object' ? JSON.stringify(detail, null, 2) : detail}</span>` : ''}
+    `;
+    area.appendChild(el);
+    area.scrollTop = area.scrollHeight;
+  }
+
+  function setStatus(ok, text) {
+    const dot = document.getElementById('status-dot');
+    dot.className = ok ? 'ok' : (ok === false ? 'err' : '');
+    document.getElementById('status-text').textContent = text;
+  }
+
+  // ── Hubungkan ─────────────────────────────────────────────────
+  document.getElementById('btn-connect').addEventListener('click', () => {
+    const url = document.getElementById('sb-url').value.trim();
+    const key = document.getElementById('sb-key').value.trim();
+
+    if (!url || !key) {
+      log('error', 'URL dan key tidak boleh kosong.');
+      return;
+    }
+    if (!url.startsWith('https://')) {
+      log('error', 'URL harus diawali https://');
+      return;
+    }
+
+    try {
+      supabase = createClient(url, key);
+      log('success', `Klien Supabase dibuat untuk: ${url}`);
+      log('info', 'Koneksi dibuat. Lanjut ke langkah 2 atau 3.');
+      setStatus(true, `Terhubung ke ${url}`);
+    } catch (e) {
+      log('error', 'Gagal membuat klien Supabase.', e.message);
+      setStatus(false, 'Gagal terhubung');
+    }
+  });
+
+  // ── Cek Trigger ──────────────────────────────────────────────
+  document.getElementById('btn-check-trigger').addEventListener('click', async () => {
+    if (!supabase) { log('warn', 'Hubungkan Supabase dulu (langkah 1).'); return; }
+    log('info', 'Mengecek trigger on_auth_user_created di pg_trigger...');
+
+    const { data, error } = await supabase
+      .from('pg_trigger')
+      .select('tgname, tgenabled')
+      .eq('tgname', 'on_auth_user_created')
+      .maybeSingle();
+
+    if (error) {
+      log('warn', 'Tidak bisa query pg_trigger langsung (normal untuk anon key). Coba cara lain.', error.message);
+      log('info', 'Pastikan SQL trigger sudah dijalankan di SQL Editor Supabase. Lanjut ke langkah 3 untuk uji langsung.');
+    } else if (!data) {
+      log('error', 'Trigger on_auth_user_created TIDAK ditemukan. Jalankan SQL di SQL Editor Supabase.');
+    } else {
+      log('success', 'Trigger on_auth_user_created ditemukan.', data);
+    }
+  });
+
+  // ── Cek Tabel ────────────────────────────────────────────────
+  document.getElementById('btn-check-table').addEventListener('click', async () => {
+    if (!supabase) { log('warn', 'Hubungkan Supabase dulu (langkah 1).'); return; }
+    log('info', 'Mengecek apakah tabel profiles ada...');
+
+    const { error } = await supabase.from('profiles').select('id').limit(1);
+
+    if (error) {
+      if (error.code === '42P01') {
+        log('error', 'Tabel profiles BELUM ADA. Jalankan SQL schema di SQL Editor Supabase.', error.message);
+      } else if (error.code === 'PGRST301') {
+        log('warn', 'Tabel ada tapi RLS memblokir akses anon (normal jika belum login).', error.message);
+        log('success', 'Tabel profiles terdeteksi. RLS aktif dan bekerja.');
+      } else {
+        log('error', 'Error tidak terduga saat cek tabel.', error);
+      }
+    } else {
+      log('success', 'Tabel profiles ditemukan dan bisa diakses.');
+    }
+  });
+
+  // ── Daftar Akun ───────────────────────────────────────────────
+  document.getElementById('btn-register').addEventListener('click', async () => {
+    if (!supabase) { log('warn', 'Hubungkan Supabase dulu (langkah 1).'); return; }
+
+    const nama  = document.getElementById('reg-nama').value.trim();
+    const peran = document.getElementById('reg-peran').value;
+    const email = document.getElementById('reg-email').value.trim();
+    const pass  = document.getElementById('reg-password').value;
+
+    if (!nama || !email || !pass) { log('warn', 'Isi semua field terlebih dahulu.'); return; }
+    if (pass.length < 6) { log('warn', 'Password minimal 6 karakter.'); return; }
+
+    log('info', `Mencoba signUp: email=${email}, peran=${peran}, nama=${nama}`);
+
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password: pass,
+      options: { data: { nama, peran } }
+    });
+
+    if (error) {
+      log('error', `signUp GAGAL: ${error.message}`, { code: error.code, status: error.status, detail: error });
+
+      // Diagnosis otomatis
+      if (error.message.includes('Database error')) {
+        log('warn', 'DIAGNOSIS: Error ini biasanya berarti trigger handle_new_user() gagal dijalankan.');
+        log('info', 'Kemungkinan penyebab:\n1. SQL trigger belum dijalankan di SQL Editor\n2. Ada typo di SQL fungsi trigger\n3. Kolom di tabel profiles tidak cocok dengan yang di-insert trigger');
+        log('info', 'Solusi: Buka SQL Editor Supabase → jalankan ulang SQL schema dari Tahap 1 → coba daftar lagi.');
+      } else if (error.message.includes('already registered')) {
+        log('warn', 'Email ini sudah terdaftar. Ganti email di field lalu coba lagi.');
+      } else if (error.message.includes('Password')) {
+        log('warn', 'Password terlalu lemah. Gunakan minimal 6 karakter.');
+      }
+      setStatus(false, 'signUp gagal');
+      return;
+    }
+
+    log('success', 'signUp berhasil!', { user_id: data.user?.id, email: data.user?.email, metadata: data.user?.user_metadata });
+
+    // Cek apakah profil terbuat
+    if (data.user) {
+      log('info', `Mengecek apakah profil otomatis terbuat untuk user ${data.user.id}...`);
+      await new Promise(r => setTimeout(r, 1000)); // tunggu trigger
+
+      const { data: profile, error: pErr } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', data.user.id)
+        .single();
+
+      if (pErr) {
+        log('error', 'Profil TIDAK terbuat otomatis. Trigger mungkin gagal.', pErr.message);
+        log('info', 'Solusi: Cek di Supabase → Table Editor → profiles, apakah ada baris baru. Jika tidak, trigger bermasalah.');
+      } else {
+        log('success', 'Profil berhasil terbuat otomatis oleh trigger!', profile);
+        setStatus(true, 'Auth & trigger bekerja dengan baik');
+      }
+    }
+  });
+
+  // ── Baca Profiles ─────────────────────────────────────────────
+  document.getElementById('btn-read-profiles').addEventListener('click', async () => {
+    if (!supabase) { log('warn', 'Hubungkan Supabase dulu.'); return; }
+    log('info', 'Membaca tabel profiles (dengan session aktif)...');
+
+    const { data: session } = await supabase.auth.getSession();
+    if (!session.session) {
+      log('warn', 'Tidak ada session aktif. Login dulu lewat signUp di langkah 3, atau gunakan akun yang sudah ada.');
+      return;
+    }
+
+    const { data, error } = await supabase.from('profiles').select('*');
+    if (error) {
+      log('error', 'Gagal membaca profiles.', error);
+    } else {
+      log('success', `Ditemukan ${data.length} profil.`, data);
+    }
+  });
+
+  // ── Clear Log ─────────────────────────────────────────────────
+  document.getElementById('btn-clear').addEventListener('click', () => {
+    const area = document.getElementById('log-area');
+    area.innerHTML = '<div class="empty-state"><span class="big">🔍</span><span>Log dibersihkan.</span></div>';
+    logCount = 0;
+    document.getElementById('log-count').textContent = '0 entri';
+  });
+</script>
+</body>
+</html>
