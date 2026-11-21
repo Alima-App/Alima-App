@@ -11,6 +11,6 @@ jobs:
     steps:
       - name: Ping Supabase
         run: |
-          curl -s "${{ https://ngrwayktygwewagodfmi.supabase.co }}/rest/v1/" \
-            -H "apikey: ${{ sb_publishable_OlWly1qy3WUh2UEgEnKbCQ_DZPvWS7m }}" \
+          curl -s "${{ secrets.SUPABASE_URL }}/rest/v1/" \
+            -H "apikey: ${{ secrets.SUPABASE_KEY }}" \
             -o /dev/null -w "Status: %{http_code}, Waktu: %{time_total}s\n"
