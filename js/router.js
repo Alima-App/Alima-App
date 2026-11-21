@@ -2,6 +2,8 @@ import { getProfile } from './auth.js';
 import { renderLogin } from './pages/login.js';
 import { renderDashboardDosen } from './pages/dashboard-dosen.js';
 import { renderDashboardMahasiswa } from './pages/dashboard-mahasiswa.js';
+import { renderKelas } from './pages/kelas.js'; // ← tambah ini
+
 
 const app = document.getElementById('app');
 
