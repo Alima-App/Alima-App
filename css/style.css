@@ -122,3 +122,15 @@ button[type=submit]:disabled { opacity: .6; cursor: not-allowed; }
   animation: spin .7s linear infinite;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
+
+/* SKELETON LOADING */
+.skeleton {
+  background: linear-gradient(90deg, var(--border) 25%, #e8edf2 50%, var(--border) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.2s infinite;
+  border-radius: var(--radius);
+}
+@keyframes shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
