@@ -32,6 +32,51 @@ DROP POLICY IF EXISTS "Mahasiswa lihat materi kelasnya" ON public.materi;
 DROP POLICY IF EXISTS "Dosen kelola tugas kelasnya" ON public.tugas;
 DROP POLICY IF EXISTS "Mahasiswa lihat tugas kelasnya" ON public.tugas;
 
+-- Fungsi pemeriksaan keanggotaan menghindari policy yang membaca ulang tabel
+-- yang sedang dievaluasi (rekursi RLS).
+CREATE OR REPLACE FUNCTION public.mahasiswa_terdaftar_di_kelas(p_kelas_id uuid)
+RETURNS boolean
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = ''
+AS $function$
+  SELECT EXISTS (
+    SELECT 1
+    FROM public.anggota_kelas ak
+    JOIN public.profiles p ON p.id = auth.uid()
+    WHERE ak.kelas_id = p_kelas_id
+      AND ak.mahasiswa_id = auth.uid()
+      AND p.peran = 'mahasiswa'
+  );
+$function$;
+
+CREATE OR REPLACE FUNCTION public.mahasiswa_terdaftar_di_kelompok(p_kelompok_id uuid)
+RETURNS boolean
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = ''
+AS $function$
+  SELECT EXISTS (
+    SELECT 1
+    FROM public.anggota_kelompok ag
+    JOIN public.kelompok g ON g.id = ag.kelompok_id
+    JOIN public.anggota_kelas ak
+      ON ak.kelas_id = g.kelas_id
+     AND ak.mahasiswa_id = auth.uid()
+    JOIN public.profiles p ON p.id = auth.uid()
+    WHERE ag.kelompok_id = p_kelompok_id
+      AND ag.mahasiswa_id = auth.uid()
+      AND p.peran = 'mahasiswa'
+  );
+$function$;
+
+REVOKE ALL ON FUNCTION public.mahasiswa_terdaftar_di_kelas(uuid) FROM PUBLIC, anon;
+REVOKE ALL ON FUNCTION public.mahasiswa_terdaftar_di_kelompok(uuid) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.mahasiswa_terdaftar_di_kelas(uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.mahasiswa_terdaftar_di_kelompok(uuid) TO authenticated;
+
 -- 2. KELAS: dosen hanya mengelola kelas miliknya; mahasiswa hanya membaca kelas yang diikuti.
 CREATE POLICY "Dosen lihat kelas sendiri"
 ON public.kelas FOR SELECT TO authenticated
@@ -111,19 +156,8 @@ USING (
 CREATE POLICY "Mahasiswa lihat anggota kelasnya"
 ON public.anggota_kelas FOR SELECT TO authenticated
 USING (
-  EXISTS (
-    SELECT 1 FROM public.profiles p
-    WHERE p.id = auth.uid() AND p.peran = 'mahasiswa'
-  )
-  AND (
-    anggota_kelas.mahasiswa_id = auth.uid()
-    OR EXISTS (
-      SELECT 1
-      FROM public.anggota_kelas milik_saya
-      WHERE milik_saya.kelas_id = anggota_kelas.kelas_id
-        AND milik_saya.mahasiswa_id = auth.uid()
-    )
-  )
+  anggota_kelas.mahasiswa_id = auth.uid()
+  OR public.mahasiswa_terdaftar_di_kelas(anggota_kelas.kelas_id)
 );
 
 CREATE POLICY "Dosen keluarkan anggota kelas sendiri"
@@ -205,17 +239,8 @@ WITH CHECK (
 CREATE POLICY "Mahasiswa lihat anggota kelompoknya"
 ON public.anggota_kelompok FOR SELECT TO authenticated
 USING (
-  EXISTS (
-    SELECT 1
-    FROM public.anggota_kelompok milik_saya
-    JOIN public.kelompok g ON g.id = milik_saya.kelompok_id
-    JOIN public.anggota_kelas ak ON ak.kelas_id = g.kelas_id
-    JOIN public.profiles p ON p.id = auth.uid()
-    WHERE milik_saya.mahasiswa_id = auth.uid()
-      AND ak.mahasiswa_id = auth.uid()
-      AND anggota_kelompok.kelompok_id = milik_saya.kelompok_id
-      AND p.peran = 'mahasiswa'
-  )
+  anggota_kelompok.mahasiswa_id = auth.uid()
+  OR public.mahasiswa_terdaftar_di_kelompok(anggota_kelompok.kelompok_id)
 );
 
 -- 6. MATERI DAN TUGAS: dosen pemilik kelas dapat mengelola; mahasiswa terdaftar hanya membaca.
