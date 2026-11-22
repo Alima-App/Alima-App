@@ -36,3 +36,22 @@ Persentase penyelesaian tahap wajib 0–7: **5 dari 8 tahap (62,5%)**, berdasark
 ## Sumber dan batas verifikasi
 
 Paket ini disusun berdasarkan dokumen `Alima App — Dokumentasi Pengembangan.md` bertanggal 22 November 2026 yang diberikan pengguna. Repository, project Supabase, kebijakan RLS aktual, dan isi file kode belum diperiksa langsung dalam proses penyusunan paket ini. Detail yang belum tersedia ditandai sebagai **perlu diverifikasi**.
+
+## Mode demo (offline)
+
+Project snapshot ini menjalankan panel login dan dashboard menggunakan `dummy-data.js` sepenuhnya. Tidak ada koneksi Supabase pada jalur aplikasi yang aktif (`index.html` → `router.js` → `auth.js` → halaman login/dashboard).
+
+**Akun demo** (password semua akun: `alima123`):
+
+- Dosen: `ahmad.fauzi@alima.test`
+- Dosen: `maryam.sholihah@alima.test`
+- Mahasiswa: `budi@alima.test`
+- Mahasiswa: `siti@alima.test`
+- Mahasiswa: `rizky@alima.test`
+- Mahasiswa: `dewi@alima.test`
+- Mahasiswa: `fajar@alima.test`
+- Mahasiswa: `nurul@alima.test`
+
+Pilih tombol peran pada panel login untuk mengisi akun demo secara otomatis. Sesi demo disimpan di `localStorage` dengan key `alima_demo_user`. Ini hanya untuk demonstrasi; jangan gunakan sebagai autentikasi produksi.
+
+Halaman kelas, materi, tugas, dan nilai yang belum diimplementasikan sebagai UI demo akan menampilkan halaman placeholder. File Supabase dan integrasi produksi yang lama tetap berada di repository, tetapi tidak diimpor oleh jalur demo aktif.

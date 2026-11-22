@@ -171,7 +171,27 @@ const JAWABAN = [
 //   dosen-001 / dosen-002 untuk tampilan dosen
 //   mhs-001 s.d. mhs-006 untuk tampilan mahasiswa
 // ─────────────────────────────────────────────────────────────
-const ACTIVE_USER_ID = 'dosen-001';
+let ACTIVE_USER_ID = localStorage.getItem('alima_demo_user') || null;
+
+export const DEMO_PASSWORD = 'alima123';
+export const DEMO_ACCOUNTS = PROFILES.map(profile => ({ ...profile, password: DEMO_PASSWORD }));
+
+export function demoLogin(email, password) {
+  const profile = PROFILES.find(item => item.email.toLowerCase() === email.trim().toLowerCase());
+  if (!profile || password !== DEMO_PASSWORD) return { data: null, error: { message: 'Email atau password demo tidak sesuai.' } };
+  ACTIVE_USER_ID = profile.id;
+  localStorage.setItem('alima_demo_user', profile.id);
+  return { data: profile, error: null };
+}
+
+export function demoLogout() {
+  ACTIVE_USER_ID = null;
+  localStorage.removeItem('alima_demo_user');
+}
+
+export function getDemoProfile() {
+  return PROFILES.find(profile => profile.id === ACTIVE_USER_ID) || null;
+}
 
 // ─────────────────────────────────────────────────────────────
 // HELPER
@@ -198,8 +218,7 @@ export const dummyDb = {
       return ok({ session: { user: { id: user.id, email: user.email } } });
     },
     async getProfile() {
-      await delay();
-      return PROFILES.find(p => p.id === ACTIVE_USER_ID) || null;
+      return getDemoProfile();
     },
     async signOut() {
       await delay();
