@@ -187,14 +187,12 @@ body{font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,
 .app-shell.sidebar-open .mobile-menu-toggle{display:none!important}
 
 
-/* Dashboard header hierarchy and bottom-edge mobile menu trigger. */
-.mobile-menu-toggle{top:auto!important;bottom:16px!important;left:16px!important;z-index:60}
-.app-shell.sidebar-open .mobile-menu-toggle{display:none!important}
-.workspace-header{padding-left:0}
+/* Dashboard header and inline hamburger placement. */
 .header-page-title{font-family:Inter,ui-sans-serif,system-ui,sans-serif!important;font-size:16px!important;font-weight:700;letter-spacing:0!important;margin:0!important}
 .workspace-context{margin:4px 0 14px;font-size:10px;letter-spacing:1.5px}
-
-
-/* Explicit student-dashboard hamburger visibility and placement. */
-.app-shell:not(.sidebar-open) > #btn-menu-toggle{display:inline-flex!important;visibility:visible!important;opacity:1!important;position:fixed!important;top:auto!important;right:auto!important;bottom:16px!important;left:16px!important;z-index:60!important}
-.app-shell.sidebar-open > #btn-menu-toggle{display:none!important}
+.workspace-header{padding-left:0}
+.workspace-heading{display:flex;align-items:center;gap:12px;min-width:0}
+.mobile-menu-toggle{position:static!important;display:inline-flex;flex:0 0 auto;align-items:center;justify-content:center;gap:8px;padding:9px 11px;border:1px solid #dce7df;border-radius:9px;background:#fff;color:#173c31;font-size:15px;font-weight:700;box-shadow:0 3px 12px #173c3118;cursor:pointer}
+.mobile-menu-toggle span{font-size:11px}
+.app-shell.sidebar-open .mobile-menu-toggle{visibility:hidden}
+@media(max-width:700px){.workspace-header{padding-left:0}.workspace-heading{gap:10px}.mobile-menu-toggle{padding:8px 10px}}
