@@ -55,3 +55,8 @@ Project snapshot ini menjalankan panel login dan dashboard menggunakan `dummy-da
 Pilih tombol peran pada panel login untuk mengisi akun demo secara otomatis. Sesi demo disimpan di `localStorage` dengan key `alima_demo_user`. Ini hanya untuk demonstrasi; jangan gunakan sebagai autentikasi produksi.
 
 Halaman kelas, materi, tugas, dan nilai yang belum diimplementasikan sebagai UI demo akan menampilkan halaman placeholder. File Supabase dan integrasi produksi yang lama tetap berada di repository, tetapi tidak diimpor oleh jalur demo aktif.
+
+
+## Lingkungan deployment
+
+Alima App dipisahkan menjadi deployment **demo** dan **produksi** dengan konfigurasi CI/CD berbeda. Demo memakai dummy data tanpa SDK Supabase; produksi memakai Supabase Auth dan RLS tanpa fallback ke dummy data. Pengaturan repository target, GitHub Environments, dan secrets dijelaskan di [`docs/DEPLOYMENT_ENVIRONMENTS.md`](docs/DEPLOYMENT_ENVIRONMENTS.md).
