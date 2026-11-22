@@ -20,3 +20,11 @@ Format: tanggal — perubahan — status verifikasi.
 - Database: ...
 - Verification: belum / sudah (jelaskan cara uji)
 ```
+
+## 2026-11-22 — Perbaikan konfigurasi deployment dan startup (disiapkan)
+
+- Menambahkan workflow deployment GitHub Pages berbasis Actions.
+- Konfigurasi Supabase frontend dibuat saat workflow berjalan dari Repository Secrets.
+- Memperbaiki router agar halaman login/daftar tidak menunggu query profil.
+- Menambahkan penanganan error startup dan validasi cache profil.
+- Belum diterapkan ke repository/produksi; perlu pengujian setelah commit dan deployment.
