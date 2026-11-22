@@ -181,3 +181,7 @@ body{font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,
 .workspace{width:100%;margin:0;padding:0 clamp(16px,4vw,58px)}
 .workspace-header{padding-left:100px}
 @media(prefers-reduced-motion:reduce){.sidebar{transition:none}}
+
+
+/* Hide the menu trigger while the off-canvas sidebar is open. */
+.app-shell.sidebar-open .mobile-menu-toggle{display:none!important}
