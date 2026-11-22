@@ -25,10 +25,10 @@ export function renderDashboardProduction(container, profile) {
       <button class="sidebar-backdrop" id="sidebar-backdrop" type="button" aria-label="Tutup menu"></button>
       <main class="workspace">
         <header class="workspace-header">
-          <div><span class="eyebrow">LINGKUNGAN PRODUKSI</span><h1>Dashboard</h1></div>
+          <div><h1 class="header-page-title">Dashboard</h1></div>
           <div class="header-right"><span class="demo-pill">PRODUCTION</span><span class="avatar">${initials}</span></div>
         </header>
-        <section class="welcome-banner">
+        <div class="workspace-context eyebrow">LINGKUNGAN PRODUKSI</div><section class="welcome-banner">
           <div><span class="eyebrow light">${role.toUpperCase()}</span><h2>Assalamu’alaikum, ${nama}.</h2><p>Selamat datang di ruang belajar digital Alima App.</p></div>
           <div class="welcome-arabic" lang="ar" dir="rtl">مَرْحَبًا بِكُمْ</div>
         </section>
