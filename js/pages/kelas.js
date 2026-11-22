@@ -260,40 +260,12 @@ async function renderKelasMahasiswa(container, profile) {
     if (!kode) { errEl.textContent = 'Masukkan kode kelas.'; return; }
 
     btn.disabled = true;
-    btn.textContent = 'Mencari...';
+    btn.textContent = 'Menggabungkan...';
     errEl.textContent = '';
 
-    // Cari kelas dengan kode ini lewat fungsi khusus (bypass RLS)
-    const { data: kelasData, error: errKelas } = await supabase
-      .rpc('cari_kelas_by_kode', { p_kode: kode });
-
-    if (errKelas || !kelasData || kelasData.length === 0) {
-      errEl.textContent = 'Kode kelas tidak ditemukan.';
-      btn.disabled = false;
-      btn.textContent = 'Gabung';
-      return;
-    }
-
-    const kelas = kelasData[0];
-
-    // Cek apakah sudah bergabung
-    const { data: sudahAda } = await supabase
-      .from('anggota_kelas')
-      .select('id')
-      .eq('kelas_id', kelas.id)
-      .eq('mahasiswa_id', profile.id)
-      .maybeSingle();
-
-    if (sudahAda) {
-      errEl.textContent = 'Kamu sudah terdaftar di kelas ini.';
-      btn.disabled = false;
-      btn.textContent = 'Gabung';
-      return;
-    }
-
+    // Bergabung melalui RPC atomik; mahasiswa tidak memiliki INSERT langsung.
     const { error: errGabung } = await supabase
-      .from('anggota_kelas')
-      .insert({ kelas_id: kelas.id, mahasiswa_id: profile.id });
+      .rpc('gabung_kelas_by_kode', { p_kode: kode });
 
     if (errGabung) {
       errEl.textContent = errGabung.message;
