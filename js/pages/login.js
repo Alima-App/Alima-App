@@ -1,78 +1,45 @@
-import { supabase } from '../supabase.js';
-import { navigate } from '../router.js';
+import { DEMO_ACCOUNTS } from '../../dummy-data.js';
+import { login } from '../auth.js';
 
-export function renderLogin(container, isDaftar = false) {
+export function renderLogin(container) {
   container.innerHTML = `
-    <div class="auth-wrap">
-      <div class="auth-box">
-        <div class="auth-logo">Alima</div>
-        <div class="auth-tabs">
-          <button class="${!isDaftar ? 'active' : ''}" id="tab-masuk">Masuk</button>
-          <button class="${isDaftar ? 'active' : ''}" id="tab-daftar">Daftar</button>
+    <main class="login-shell">
+      <section class="login-brand-panel">
+        <div class="brand-lockup"><span class="brand-mark">ع</span><span>Alima</span></div>
+        <div class="brand-copy"><span class="eyebrow">LEARNING MANAGEMENT SYSTEM</span><h1>Belajar bahasa Arab, <em>lebih terarah.</em></h1><p>Ruang belajar digital untuk dosen dan mahasiswa mengembangkan pemahaman bahasa Arab.</p></div>
+        <div class="arabic-note" lang="ar" dir="rtl">العِلْمُ نُورٌ</div>
+        <div class="brand-footer">Alima App · Demo Environment</div>
+      </section>
+      <section class="login-form-panel">
+        <div class="login-card">
+          <div class="mobile-brand brand-lockup"><span class="brand-mark">ع</span><span>Alima</span></div>
+          <span class="eyebrow">SELAMAT DATANG KEMBALI</span><h2>Masuk ke akunmu</h2><p class="login-subtitle">Gunakan akun demo untuk menjelajahi Alima App.</p>
+          <form id="form-auth">
+            <label for="input-email">Email</label><input id="input-email" type="email" placeholder="nama@alima.test" autocomplete="username" required />
+            <label for="input-password">Password</label><div class="password-wrap"><input id="input-password" type="password" placeholder="Masukkan password" autocomplete="current-password" required /><button type="button" id="toggle-password" aria-label="Tampilkan password">◉</button></div>
+            <p id="auth-error" class="error-msg" role="alert"></p><button class="login-submit" id="btn-submit" type="submit">Masuk ke dashboard <span>→</span></button>
+          </form>
+          <div class="demo-access"><div class="demo-heading"><span>AKUN DEMO</span><span class="demo-pill">OFFLINE</span></div><p>Pilih peran untuk mengisi akun otomatis.</p><div class="demo-buttons"><button type="button" data-demo-role="dosen">Masuk sebagai dosen</button><button type="button" data-demo-role="mahasiswa">Masuk sebagai mahasiswa</button></div><div class="demo-credential" id="demo-credential">Password semua akun: <strong>alima123</strong></div></div>
+          <p class="login-footnote">Mode demonstrasi · Data tidak tersimpan ke server.</p>
         </div>
+      </section>
+    </main>`;
 
-        <form id="form-auth">
-          <div id="field-nama" style="display:${isDaftar ? 'block' : 'none'}">
-            <label>Nama lengkap</label>
-            <input type="text" id="input-nama" placeholder="Nama lengkap" />
-          </div>
-          <div id="field-peran" style="display:${isDaftar ? 'block' : 'none'}">
-            <label>Daftar sebagai</label>
-            <select id="input-peran">
-              <option value="mahasiswa">Mahasiswa</option>
-              <option value="dosen">Dosen</option>
-            </select>
-          </div>
-          <div>
-            <label>Email</label>
-            <input type="email" id="input-email" placeholder="email@contoh.com" required />
-          </div>
-          <div>
-            <label>Password</label>
-            <input type="password" id="input-password" placeholder="Password" required />
-          </div>
-          <p id="auth-error" class="error-msg"></p>
-          <button type="submit" id="btn-submit">
-            ${isDaftar ? 'Buat Akun' : 'Masuk'}
-          </button>
-        </form>
-      </div>
-    </div>
-  `;
-
-  let mode = isDaftar ? 'daftar' : 'masuk';
-
-  document.getElementById('tab-masuk').addEventListener('click', () => {
-    window.location.hash = '#/login';
-  });
-  document.getElementById('tab-daftar').addEventListener('click', () => {
-    window.location.hash = '#/daftar';
-  });
-
-  document.getElementById('form-auth').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const email = document.getElementById('input-email').value.trim();
-    const password = document.getElementById('input-password').value;
-    const errEl = document.getElementById('auth-error');
-    const btn = document.getElementById('btn-submit');
-    btn.disabled = true;
-    btn.textContent = 'Memproses...';
-    errEl.textContent = '';
-
-    if (mode === 'daftar') {
-      const nama = document.getElementById('input-nama').value.trim();
-      const peran = document.getElementById('input-peran').value;
-      if (!nama) { errEl.textContent = 'Nama tidak boleh kosong.'; btn.disabled = false; btn.textContent = 'Buat Akun'; return; }
-      const { error } = await supabase.auth.signUp({
-        email, password,
-        options: { data: { nama, peran } }
-      });
-      if (error) { errEl.textContent = error.message; btn.disabled = false; btn.textContent = 'Buat Akun'; return; }
-    } else {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) { errEl.textContent = 'Email atau password salah.'; btn.disabled = false; btn.textContent = 'Masuk'; return; }
-    }
-
-    await navigate();
+  const email = container.querySelector('#input-email');
+  const password = container.querySelector('#input-password');
+  const error = container.querySelector('#auth-error');
+  const submit = container.querySelector('#btn-submit');
+  container.querySelector('#toggle-password').addEventListener('click', () => { password.type = password.type === 'password' ? 'text' : 'password'; });
+  container.querySelectorAll('[data-demo-role]').forEach(button => button.addEventListener('click', () => {
+    const role = button.dataset.demoRole;
+    const account = DEMO_ACCOUNTS.find(item => item.peran === role);
+    email.value = account.email; password.value = 'alima123'; error.textContent = '';
+    container.querySelectorAll('[data-demo-role]').forEach(item => item.classList.toggle('selected', item === button));
+  }));
+  container.querySelector('#form-auth').addEventListener('submit', event => {
+    event.preventDefault(); error.textContent = ''; submit.disabled = true; submit.textContent = 'Memeriksa akun…';
+    const result = login(email.value, password.value);
+    if (result.error) { error.textContent = result.error.message; submit.disabled = false; submit.innerHTML = 'Masuk ke dashboard <span>→</span>'; return; }
+    window.location.hash = result.data.peran === 'dosen' ? '#/dashboard-dosen' : '#/dashboard-mahasiswa';
   });
 }
