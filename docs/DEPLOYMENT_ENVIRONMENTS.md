@@ -1,45 +1,86 @@
 # Lingkungan Demo dan Produksi
 
+## Keputusan deployment
+
+Alima App menggunakan **satu repository sumber**: `Alima-App/Alima-App`.
+
+| Lingkungan | Branch sumber | Hosting | Backend |
+|---|---|---|---|
+| Demo | `main` | GitHub Pages | Data simulasi lokal |
+| Produksi | `release` | BiznetGio NEO Web Hosting | Supabase produksi |
+
+Alamat demo saat ini: https://alima-app.github.io/Alima-App/
+
+Produksi menggunakan hosting BiznetGio. Domain khusus tidak menjadi kebutuhan saat ini; gunakan alamat bawaan hosting jika tersedia. Ketersediaan dan format alamat bawaan perlu dikonfirmasi di panel/dukungan BiznetGio sebelum rilis.
+
 ## Prinsip pemisahan
 
-Alima App memiliki dua deployment terpisah. Mode dipilih saat CI/CD membangkitkan `js/deployment-config.js`; tidak ada switch mode pada UI. File konfigurasi yang terlacak di Git menggunakan default aman `demo` tanpa kredensial.
+- **Demo** menggunakan provider lokal `js/providers/demo-auth.js` dan `dummy-data.js`. Jalur aktif demo tidak boleh mengimpor atau menginisialisasi Supabase SDK.
+- **Produksi** menggunakan `js/providers/supabase-auth.js`, Supabase Auth, database, RLS, dan Storage. Tidak boleh fallback ke data dummy saat Supabase gagal.
+- Mode dipilih ketika deployment membangkitkan `js/deployment-config.js`; tidak ada switch mode pada UI.
+- File konfigurasi yang dilacak di Git harus tetap aman dengan default `demo` tanpa kredensial.
+- Jangan pernah menaruh Supabase service-role/secret key pada frontend. Hanya publishable/anon key yang boleh digunakan di browser, dengan RLS yang benar.
 
-- **Demo**: provider lokal `js/providers/demo-auth.js`, dataset `dummy-data.js`, tanpa import SDK Supabase. Akun demo bukan akun produksi.
-- **Produksi**: provider `js/providers/supabase-auth.js`, Supabase Auth dan tabel `profiles`; akses data ditentukan RLS. Tidak ada fallback otomatis ke dummy data jika Supabase gagal.
-- **UI**: satu basis kode; halaman dashboard demo dan produksi dipisahkan agar dashboard produksi tidak menampilkan statistik dummy. Halaman kelas/materi produksi menggunakan integrasi Supabase yang telah ada.
+## Alur branch
 
-## Konfigurasi GitHub wajib
+1. Pengembangan dan demo berjalan dari `main`.
+2. Setiap perubahan yang akan dirilis ke pengguna nyata dipromosikan secara terkontrol ke branch `release`.
+3. Branch `release` menjadi sumber deployment produksi ke BiznetGio.
+4. Jangan menggabungkan perubahan ke produksi sebelum pemeriksaan fungsional, keamanan, dan konfigurasi selesai.
 
-Buat GitHub Environments bernama `demo` dan `production`. Siapkan secrets/variables berikut:
+Branch `release` belum dianggap tersedia sampai benar-benar dibuat di GitHub. Workflow deployment juga belum dianggap aktif sebelum file workflow ditambahkan, secrets dikonfigurasi, dan eksekusi berhasil.
 
-| Environment | Type | Name | Isi |
-|---|---|---|---|
-| demo | Variable | `DEMO_DEPLOY_REPOSITORY` | `owner/repo` khusus situs demo |
-| production | Variable | `PRODUCTION_DEPLOY_REPOSITORY` | `owner/repo` khusus situs produksi |
-| keduanya | Secret | `ALIMA_DEPLOY_TOKEN` | PAT dengan izin tulis ke masing-masing repository target |
-| production | Variable | `SUPABASE_URL` | URL project Supabase produksi |
-| production | Secret | `SUPABASE_ANON_KEY` | Publishable/anon key project produksi |
+## Konfigurasi yang diperlukan
 
-Repository target demo dan produksi harus berbeda dan masing-masing mengaktifkan GitHub Pages dari branch `gh-pages`. Gunakan token dengan cakupan minimum yang diperlukan. Jangan gunakan service-role/secret key di browser. Publishable/anon key memang dapat terlihat di frontend; keamanan wajib ditegakkan oleh RLS.
+### Demo — GitHub Pages
 
-## Alur deployment
+- Aktifkan GitHub Pages untuk repository ini.
+- Gunakan GitHub Actions atau konfigurasi Pages yang konsisten untuk menerbitkan isi branch `main`.
+- Build demo harus menghasilkan `js/deployment-config.js` dengan mode `demo` dan kredensial Supabase kosong.
+- Pastikan URL demo tetap sesuai konfigurasi GitHub Pages repository.
 
-- Push ke `main` menjalankan `deploy-demo.yml` dan menerbitkan build demo ke repository demo.
-- Push ke `release` menjalankan `deploy-production.yml` dan menerbitkan build produksi ke repository produksi.
-- Keduanya juga dapat dijalankan manual melalui Actions → workflow → Run workflow.
-- Branch `release` harus dilindungi (review wajib) dan environment `production` sebaiknya memakai required reviewers.
+### Produksi — BiznetGio
+
+Sebelum workflow FTPS/SFTP dibuat dan dijalankan, konfirmasi metode deployment yang didukung paket hosting dan siapkan GitHub Environment bernama `production`.
+
+Secrets/variables yang dibutuhkan workflow (nama final mengikuti metode upload yang didukung BiznetGio):
+
+| Nama | Jenis | Keterangan |
+|---|---|---|
+| `SUPABASE_URL` | Variable | URL project Supabase produksi |
+| `SUPABASE_ANON_KEY` | Secret | Publishable/anon key, bukan service-role |
+| `FTP_HOST` | Secret | Host FTP/FTPS dari BiznetGio |
+| `FTP_USERNAME` | Secret | Username deployment |
+| `FTP_PASSWORD` | Secret | Password deployment |
+| `FTP_TARGET_DIR` | Variable | Direktori web root yang ditetapkan BiznetGio |
+
+Jangan menambahkan nilai secrets ke repository, issue, dokumentasi publik, atau log. Gunakan FTPS jika tersedia; jangan mengirim kredensial melalui koneksi FTP tanpa enkripsi.
+
+### Konfigurasi produksi saat build
+
+File `js/deployment-config.js` untuk build produksi harus berisi mode `production`, `SUPABASE_URL`, dan `SUPABASE_ANON_KEY`. Gunakan script build/deployment yang tervalidasi; jangan mengubah file konfigurasi tracked secara permanen menjadi mode produksi.
+
+## Kondisi implementasi saat ini
+
+- Provider demo dan Supabase sudah dipisahkan melalui dynamic import pada `js/auth.js`.
+- Klien Supabase menolak inisialisasi jika mode bukan `production` atau konfigurasi kosong.
+- `js/deployment-config.js` yang ada di branch `main` saat ini menggunakan mode `demo`.
+- Repository saat ini baru memiliki workflow `.github/workflows/ping.yml`; workflow deploy demo dan produksi belum tersedia.
+- Branch yang terverifikasi saat pemeriksaan terakhir hanya `main`. Branch `release` belum dibuat.
+- Deployment produksi ke BiznetGio belum dijalankan dan belum diverifikasi.
 
 ## Pengujian sebelum rilis
 
-1. Buka situs demo, login dengan akun `@alima.test`, pastikan dashboard berlabel DEMO dan tidak ada request ke domain Supabase.
-2. Buka situs produksi, login dengan akun Supabase, pastikan tidak ada akun demo atau data dummy.
-3. Uji mahasiswa tidak dapat melihat/mengubah data kelas mahasiswa lain dan dosen hanya mengelola data yang diizinkan RLS.
-4. Uji konfigurasi produksi kosong harus gagal tertutup dengan pesan konfigurasi, bukan beralih ke dummy.
-5. Periksa Network tab: demo tidak memuat `supabase-js`; produksi hanya menggunakan URL project produksi.
+1. Demo dapat dibuka dan login dengan akun demo; data demo tidak menyentuh Supabase.
+2. Network tab demo tidak menunjukkan request ke project Supabase dan tidak memuat SDK Supabase.
+3. Produksi hanya memakai project Supabase produksi dan tidak menggunakan akun/data demo.
+4. Konfigurasi produksi kosong harus gagal tertutup, bukan beralih ke dummy.
+5. Dosen hanya dapat mengelola data sesuai kewenangannya.
+6. Mahasiswa hanya dapat membaca kelas, materi, tugas, jawaban, dan nilai yang menjadi haknya.
+7. Kunci jawaban tidak pernah dikirim ke browser mahasiswa.
+8. Uji tampilan pada ponsel dan desktop.
+9. Pastikan secret/service-role key tidak muncul di bundle, repository, atau log.
 
-## Batasan yang belum boleh diasumsikan
+## Catatan kapasitas dan biaya
 
-- File SQL dan kebijakan RLS aktual belum diaudit pada project Supabase.
-- Halaman tugas/nilai masih belum diimplementasikan penuh.
-- Deploy workflow memerlukan pengaturan GitHub Environments, PAT, dan dua repository target oleh pemilik repository.
-- `ping.yml` lama dipertahankan; ping tidak menjamin project Supabase gratis tidak akan dijeda.
+Hosting BiznetGio digunakan untuk menyajikan frontend statis; database, autentikasi, dan penyimpanan file tetap ditangani Supabase. Kelayakan untuk sekitar 500 mahasiswa tetap perlu diuji melalui skenario akses bersamaan dan pemantauan kuota Supabase. Keberhasilan hosting statis saja tidak membuktikan kapasitas keseluruhan aplikasi.
