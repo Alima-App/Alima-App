@@ -10,7 +10,7 @@ Alima App adalah LMS web untuk perkuliahan bahasa Arab. Aplikasi memiliki dua pe
 
 - HTML, CSS, JavaScript ES Modules.
 - Tanpa framework dan tanpa build tool.
-- GitHub Pages untuk hosting frontend.
+- GitHub Pages untuk demo pada branch `main`; BiznetGio untuk produksi pada branch `release` sesuai `docs/DEPLOYMENT_ENVIRONMENTS.md`.
 - Supabase PostgreSQL, Auth email/password, RLS, dan Storage.
 - supabase-js versi 2.49.4 melalui CDN jsDelivr.
 - Hash routing (`#/...`).
@@ -19,7 +19,7 @@ Jangan migrasikan stack secara sepihak.
 
 ## Arsitektur singkat
 
-Browser memuat aset statis dari GitHub Pages, lalu berkomunikasi langsung dengan Supabase menggunakan publishable key. Otorisasi data dilakukan di database melalui RLS. File disimpan pada bucket privat `materi-files` dan diakses menggunakan signed URL yang tercatat berlaku 300 detik.
+Browser demo memuat aset statis dari GitHub Pages dan memakai provider simulasi lokal. Browser produksi memuat aset statis dari BiznetGio, lalu berkomunikasi langsung dengan Supabase menggunakan publishable key. Otorisasi data dilakukan di database melalui RLS. File disimpan pada bucket privat `materi-files` dan diakses menggunakan signed URL yang tercatat berlaku 300 detik.
 
 ## Struktur kode yang tercatat
 
@@ -28,16 +28,24 @@ alima-app/
 ├── index.html
 ├── css/style.css
 └── js/
-    ├── supabase.js
     ├── auth.js
     ├── router.js
-    ├── dummy-data.js
+    ├── deployment-config.js
+    ├── supabase.js
+    ├── providers/
+    │   ├── demo-auth.js
+    │   ├── supabase-auth.js
+    │   └── supabase-client.js
     └── pages/
-        ├── login.js
+        ├── login-demo.js
+        ├── login-production.js
         ├── dashboard-dosen.js
         ├── dashboard-mahasiswa.js
+        ├── dashboard-production.js
         ├── kelas.js
         └── materi.js
+
+`dummy-data.js` berada di root repository dan digunakan oleh provider demo.
 ```
 
 Setiap halaman dirender ke `#app`. Router memakai hash dan event `hashchange`. File JavaScript adalah ES Module.
@@ -90,4 +98,9 @@ Setiap halaman dirender ke `#app`. Router memakai hash dan event `hashchange`. F
 
 ## Keputusan deployment terbaru
 
-Demo dan produksi adalah deployment terpisah, menggunakan dua repository target Pages dan GitHub Environments terpisah. Mode dibangkitkan saat CI/CD, bukan dipilih pengguna. Demo = dummy provider offline; produksi = Supabase Auth/database. Baca `docs/DEPLOYMENT_ENVIRONMENTS.md` sebelum mengubah alur autentikasi atau workflow. Jangan menambahkan fallback produksi ke dummy data.
+Demo dan produksi memakai satu repository sumber: `main` untuk demo GitHub Pages dan `release` untuk produksi BiznetGio. Mode dibangkitkan saat proses deployment, bukan dipilih pengguna. Status branch dan workflow harus diperiksa langsung di GitHub sebelum menyatakan deployment aktif. Demo = dummy provider offline; produksi = Supabase Auth/database. Baca `docs/DEPLOYMENT_ENVIRONMENTS.md` sebelum mengubah alur autentikasi atau workflow. Jangan menambahkan fallback produksi ke dummy data.
+
+
+## Peringatan keamanan autentikasi yang harus dituntaskan
+
+Form registrasi produksi saat ini mengizinkan pengguna memilih peran `dosen` atau `mahasiswa`, dan provider mengirim nilai tersebut sebagai metadata sign-up. **Jangan menganggap pilihan peran dari browser sebagai sumber otoritas.** Sebelum produksi digunakan, audit trigger `handle_new_user()` dan pastikan peran dosen hanya dapat diberikan oleh administrator melalui mekanisme tepercaya. Trigger harus menetapkan peran default mahasiswa dan mengabaikan/menolak metadata peran dosen dari sign-up publik. Perubahan ini memerlukan verifikasi SQL aktual di Supabase; jangan mengklaim aman hanya dengan menyembunyikan opsi pada UI.
