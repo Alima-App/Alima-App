@@ -1,4 +1,4 @@
-import { getProfile } from './auth.js';
+import { getSession, getProfile } from './auth.js';
 import { renderLogin } from './pages/login.js';
 import { renderDashboardDosen } from './pages/dashboard-dosen.js';
 import { renderDashboardMahasiswa } from './pages/dashboard-mahasiswa.js';
@@ -7,108 +7,85 @@ import { renderMateri } from './pages/materi.js';
 
 const app = document.getElementById('app');
 let isFirstLoad = true;
+let navigationId = 0;
 
 function showLoading() {
-  app.innerHTML = `
-    <div class="page-wrap" style="max-width:900px;margin:0 auto;padding:2rem 5%">
-      <div class="skeleton" style="width:160px;height:20px;margin-bottom:2rem"></div>
-      <div class="skeleton" style="width:100%;height:80px;margin-bottom:1rem"></div>
-      <div class="skeleton" style="width:100%;height:80px;margin-bottom:1rem"></div>
-      <div class="skeleton" style="width:100%;height:80px"></div>
-    </div>
-  `;
+  app.innerHTML = isFirstLoad
+    ? `<div class="page-wrap" style="min-height:70vh;display:grid;place-content:center;text-align:center">
+         <strong style="font:900 2.2rem Georgia,serif;color:var(--navy)">Ali<span style="color:var(--green)">ma</span></strong>
+         <div class="spinner" role="status" aria-label="Memuat"></div>
+         <p class="loading">Menyiapkan kelas...</p>
+       </div>`
+    : `<div class="page-wrap"><div class="skeleton" style="height:24px;width:45%;margin-bottom:1rem"></div><div class="skeleton" style="height:90px;margin-bottom:1rem"></div><div class="skeleton" style="height:90px"></div></div>`;
+  isFirstLoad = false;
 }
 
-function showLoading() {
-  if (isFirstLoad) {
-    // Splash screen hanya saat pertama buka
-    app.innerHTML = `
-      <div style="
-        display:flex;flex-direction:column;
-        align-items:center;justify-content:center;
-        min-height:100vh;gap:1.25rem;background:var(--white)
-      ">
-        <div style="
-          font-family:'Playfair Display',serif;
-          font-size:2.5rem;font-weight:900;
-          color:var(--navy);letter-spacing:-0.02em
-        ">
-          Ali<span style="color:var(--green)">ma</span>
-        </div>
-        <div class="spinner"></div>
-        <p style="color:var(--muted);font-size:.78rem;letter-spacing:.06em;text-transform:uppercase">
-          Menyiapkan kelas...
-        </p>
-      </div>
-    `;
-    isFirstLoad = false;
-  } else {
-    // Skeleton saat navigasi antar halaman
-    app.innerHTML = `
-      <div class="page-wrap" style="max-width:900px;margin:0 auto;padding:2rem 5%">
-        <div class="skeleton" style="width:120px;height:16px;margin-bottom:1.5rem;border-radius:6px"></div>
-        <div class="skeleton" style="width:200px;height:28px;margin-bottom:2rem;border-radius:6px"></div>
-        <div class="skeleton" style="width:100%;height:88px;margin-bottom:.75rem;border-radius:10px"></div>
-        <div class="skeleton" style="width:100%;height:88px;margin-bottom:.75rem;border-radius:10px"></div>
-        <div class="skeleton" style="width:80%;height:88px;border-radius:10px"></div>
-      </div>
-    `;
-  }
+function showError(error) {
+  console.error('[Alima] Gagal memuat aplikasi:', error);
+  app.innerHTML = `<main class="page-wrap" role="alert">
+    <h2>Aplikasi belum dapat dimuat</h2>
+    <p class="muted" style="margin:1rem 0">Periksa koneksi internet dan konfigurasi layanan. Silakan coba kembali.</p>
+    <button class="btn-primary" id="btn-retry">Coba Lagi</button>
+  </main>`;
+  document.getElementById('btn-retry')?.addEventListener('click', () => navigate());
 }
 
 export async function navigate() {
+  const currentNavigation = ++navigationId;
+  const hash = window.location.hash || '#/login';
+  const publicRoute = hash === '#/login' || hash === '#/daftar';
   showLoading();
 
-  const hash = window.location.hash || '#/login';
-  const profile = await getProfile();
+  try {
+    // Halaman login/daftar tidak perlu menunggu query profil ke database.
+    const session = await getSession();
+    if (currentNavigation !== navigationId) return;
 
-  const protected_routes = ['#/dashboard', '#/kelas', '#/materi', '#/tugas', '#/nilai'];
-  const is_protected = protected_routes.some(r => hash.startsWith(r));
-
-  if (is_protected && !profile) {
-    window.location.hash = '#/login';
-    return;
-  }
-
-  if (hash === '#/login' || hash === '#/daftar') {
-    if (profile) {
-      window.location.hash = profile.peran === 'dosen'
-        ? '#/dashboard-dosen'
-        : '#/dashboard-mahasiswa';
+    if (publicRoute && !session) {
+      renderLogin(app, hash === '#/daftar');
       return;
     }
-    renderLogin(app, hash === '#/daftar');
-    return;
-  }
 
-  if (hash.startsWith('#/dashboard-dosen')) {
-    if (profile?.peran !== 'dosen') { window.location.hash = '#/login'; return; }
-    renderDashboardDosen(app, profile);
-    return;
-  }
+    const protectedRoutes = ['#/dashboard', '#/kelas', '#/materi', '#/tugas', '#/nilai'];
+    const isProtected = protectedRoutes.some(route => hash.startsWith(route));
+    if (isProtected && !session) {
+      window.location.hash = '#/login';
+      return;
+    }
 
-  if (hash.startsWith('#/dashboard-mahasiswa')) {
-    if (profile?.peran !== 'mahasiswa') { window.location.hash = '#/login'; return; }
-    renderDashboardMahasiswa(app, profile);
-    return;
-  }
+    // Profil hanya diminta saat sesi ada atau halaman memerlukannya.
+    const profile = session ? await getProfile() : null;
+    if (currentNavigation !== navigationId) return;
 
-  if (hash.startsWith('#/kelas')) {
-    renderKelas(app);
-    return;
-  }
+    if (session && !profile) {
+      app.innerHTML = `<div class="page-wrap"><p class="error-msg">Profil akun tidak ditemukan. Silakan hubungi pengelola kelas.</p><button class="btn-primary" id="btn-signout">Kembali ke Login</button></div>`;
+      document.getElementById('btn-signout')?.addEventListener('click', async () => {
+        const { supabase } = await import('./supabase.js');
+        await supabase.auth.signOut();
+        window.location.hash = '#/login';
+      });
+      return;
+    }
 
-  if (hash.startsWith('#/materi')) {
-    renderMateri(app);
-    return;
-  }
+    if (publicRoute) {
+      window.location.hash = profile.peran === 'dosen' ? '#/dashboard-dosen' : '#/dashboard-mahasiswa';
+      return;
+    }
+    if (hash.startsWith('#/dashboard-dosen')) {
+      if (profile?.peran !== 'dosen') { window.location.hash = '#/login'; return; }
+      renderDashboardDosen(app, profile); return;
+    }
+    if (hash.startsWith('#/dashboard-mahasiswa')) {
+      if (profile?.peran !== 'mahasiswa') { window.location.hash = '#/login'; return; }
+      renderDashboardMahasiswa(app, profile); return;
+    }
+    if (hash.startsWith('#/kelas')) { renderKelas(app); return; }
+    if (hash.startsWith('#/materi')) { await renderMateri(app); return; }
 
-  app.innerHTML = `
-    <div class="page-wrap">
-      <a href="${profile?.peran === 'dosen' ? '#/dashboard-dosen' : '#/dashboard-mahasiswa'}" class="back-link">← Dashboard</a>
-      <div class="empty-state" style="margin-top:1rem">Halaman ini sedang dalam pengerjaan.</div>
-    </div>
-  `;
+    app.innerHTML = `<div class="page-wrap"><a href="${profile?.peran === 'dosen' ? '#/dashboard-dosen' : '#/dashboard-mahasiswa'}" class="back-link">← Dashboard</a><div class="empty-state" style="margin-top:1rem">Halaman ini sedang dalam pengerjaan.</div></div>`;
+  } catch (error) {
+    if (currentNavigation === navigationId) showError(error);
+  }
 }
 
 window.addEventListener('hashchange', navigate);
