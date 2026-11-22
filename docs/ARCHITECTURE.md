@@ -78,3 +78,7 @@ Dokumentasi sumber mencatat cache session di memori dan localStorage. Navigasi a
 - Otorisasi data harus dilakukan oleh Supabase RLS.
 - Signed URL adalah akses sementara; siapa pun yang memiliki URL selama masa berlaku dapat menggunakannya sesuai karakteristik URL bertanda tangan.
 - Workflow ping tidak boleh dianggap sebagai jaminan SLA atau jaminan bahwa proyek gratis tidak akan dijeda.
+
+## Pemisahan deployment demo/produksi
+
+Konfigurasi dipilih pada waktu deployment melalui `js/deployment-config.js`. Provider autentikasi dimuat secara dinamis: demo hanya memuat provider lokal, sedangkan produksi memuat provider Supabase. Kedua lingkungan diterbitkan ke repository GitHub Pages yang berbeda. Detail operasional: [`DEPLOYMENT_ENVIRONMENTS.md`](DEPLOYMENT_ENVIRONMENTS.md).

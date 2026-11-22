@@ -87,3 +87,7 @@ Setiap halaman dirender ke `#app`. Router memakai hash dan event `hashchange`. F
 - Jangan menganggap `Math.random()` cukup untuk kode kelas yang memerlukan jaminan anti-kolisi atau keamanan tinggi.
 - Jangan mengubah fungsi RPC, trigger, atau policy berdasarkan tebakan.
 - Jika kode aktual berbeda dari dokumen, laporkan perbedaannya dan minta keputusan sebelum melakukan perubahan arsitektur.
+
+## Keputusan deployment terbaru
+
+Demo dan produksi adalah deployment terpisah, menggunakan dua repository target Pages dan GitHub Environments terpisah. Mode dibangkitkan saat CI/CD, bukan dipilih pengguna. Demo = dummy provider offline; produksi = Supabase Auth/database. Baca `docs/DEPLOYMENT_ENVIRONMENTS.md` sebelum mengubah alur autentikasi atau workflow. Jangan menambahkan fallback produksi ke dummy data.

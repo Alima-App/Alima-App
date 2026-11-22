@@ -64,3 +64,7 @@ Validasi pada frontend berguna untuk pengalaman pengguna, tetapi aturan keamanan
 ## 8. Backup dan pemulihan
 
 Paket Supabase gratis yang tercatat tidak menyediakan backup otomatis. Lakukan ekspor manual berkala, simpan secara aman, dan dokumentasikan prosedur restore. Jangan menyimpan dump database berisi data pribadi di repository publik.
+
+## Isolasi lingkungan
+
+Demo tidak boleh mengakses project Supabase. Produksi tidak boleh memuat `dummy-data.js` sebagai fallback autentikasi/data. Tidak ada pemilih mode di UI. URL dan publishable/anon key produksi disuntikkan oleh workflow; service-role key dilarang di frontend. Kebijakan RLS tetap menjadi batas keamanan utama dan harus diuji dengan akun berbeda.

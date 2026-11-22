@@ -28,3 +28,11 @@ Format: tanggal — perubahan — status verifikasi.
 - Router demo tidak mengimpor Supabase atau modul halaman yang masih bergantung pada Supabase.
 - Halaman kelas/materi/tugas/nilai yang belum memiliki implementasi demo ditampilkan sebagai placeholder yang jelas.
 - Catatan: autentikasi demo hanya untuk preview, bukan mekanisme keamanan produksi.
+
+## 2026-11-22 — Isolasi deployment demo dan produksi
+
+- Menambahkan konfigurasi deployment yang dihasilkan CI/CD.
+- Memisahkan provider autentikasi demo dan Supabase.
+- Menambahkan workflow demo (branch `main`) dan produksi (branch `release`) dengan repository Pages terpisah.
+- Menambahkan dokumentasi operasional lingkungan.
+- Produksi menggunakan dashboard tanpa data dummy; integrasi tugas/nilai masih dalam roadmap.

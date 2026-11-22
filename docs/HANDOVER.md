@@ -44,3 +44,12 @@ Kuota dan kebijakan layanan dapat berubah; verifikasi di dashboard/dokumentasi r
 - Token akses, password, recovery code.
 - Dump database berisi data pribadi.
 - Signed URL aktif yang memberi akses file.
+
+
+## Setup deployment terpisah
+
+Sebelum deployment, buat GitHub Environments `demo` dan `production`, isi variables/secrets sesuai `DEPLOYMENT_ENVIRONMENTS.md`, dan siapkan dua repository Pages target yang berbeda. Workflow produksi berjalan dari branch `release`; wajib lakukan review dan pengujian RLS sebelum rilis.
+
+## Catatan status implementasi isolasi
+
+Pemisahan provider dan konfigurasi deployment sudah ditambahkan pada paket ini. Validasi sintaks JavaScript dan pengujian generator konfigurasi demo/produksi telah dilakukan. Deployment GitHub Pages nyata belum dijalankan karena membutuhkan pengaturan GitHub Environments, token, dan dua repository target. Dashboard produksi saat ini sengaja hanya menampilkan identitas akun dan tautan ke modul kelas/materi; dashboard statistik, tugas, dan nilai belum diklaim selesai.

@@ -1,32 +1,11 @@
 # Alima App — Demo Mode
 
-## Tujuan
-Menampilkan panel login dan dashboard dosen/mahasiswa tanpa koneksi ke Supabase, menggunakan dataset lokal `dummy-data.js`.
+Mode demo adalah deployment tersendiri yang dibangun oleh `.github/workflows/deploy-demo.yml` dari branch `main`. Konfigurasinya dibuat oleh `scripts/write-deployment-config.sh` dengan `mode: 'demo'`.
 
-## Alur modul
-`index.html` → `js/router.js` → `js/auth.js` → `js/pages/login.js` / dashboard.
+- Menggunakan `dummy-data.js` dan `js/providers/demo-auth.js`.
+- Tidak menginisialisasi Supabase dan tidak membutuhkan URL/key Supabase.
+- Akun demo: `ahmad.fauzi@alima.test`, `maryam.sholihah@alima.test`, `budi@alima.test`, `siti@alima.test`, `rizky@alima.test`, `dewi@alima.test`, `fajar@alima.test`, `nurul@alima.test`.
+- Password seluruh akun: `alima123`.
+- Data/sesi demo hanya simulasi dan tidak boleh dipakai untuk keputusan akademik atau data sensitif.
 
-Jalur ini tidak mengimpor `js/supabase.js`, sehingga tidak melakukan request Supabase dan tidak membutuhkan URL/key.
-
-## Akun demo
-Password seluruh akun: `alima123`.
-
-| Peran | Email |
-|---|---|
-| Dosen | ahmad.fauzi@alima.test |
-| Dosen | maryam.sholihah@alima.test |
-| Mahasiswa | budi@alima.test |
-| Mahasiswa | siti@alima.test |
-| Mahasiswa | rizky@alima.test |
-| Mahasiswa | dewi@alima.test |
-| Mahasiswa | fajar@alima.test |
-| Mahasiswa | nurul@alima.test |
-
-## Sesi
-`demoLogin()` menyimpan ID profil aktif di `localStorage` (`alima_demo_user`). `demoLogout()` menghapusnya. Data ini hanya simulasi identitas dan dapat dimodifikasi pengguna; jangan gunakan untuk akses data sensitif atau produksi.
-
-## Batasan saat ini
-Dashboard membaca kelas, jumlah anggota, materi, dan tugas dari dummy database. Navigasi kelas/materi/tugas/nilai menampilkan placeholder karena halaman aslinya masih memakai Supabase. Integrasi fitur tersebut ke dummyDb adalah pekerjaan lanjutan.
-
-## Kembali ke produksi
-Mode demo ini menggantikan jalur autentikasi aktif. Sebelum kembali ke produksi, pulihkan integrasi Supabase dengan pengujian autentikasi, RLS, serta alur sesi. Jangan pernah menaruh service-role key di frontend.
+Deployment demo diterbitkan ke repository Pages khusus yang ditentukan oleh GitHub Environment variable `DEMO_DEPLOY_REPOSITORY`. Demo dan produksi tidak berbagi domain deployment maupun konfigurasi runtime. Lihat [`DEPLOYMENT_ENVIRONMENTS.md`](DEPLOYMENT_ENVIRONMENTS.md).
