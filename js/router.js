@@ -19,7 +19,7 @@ export async function navigate() {
    return;
   }
   if(hash.startsWith('#/kelas')){if(deployment.mode==='demo'){showDemoPlaceholder();}else {const page=await import('./pages/kelas.js');await page.renderKelas(app);}return;}
-  if(hash.startsWith('#/materi')){if(deployment.mode==='demo'){showDemoPlaceholder();}else {const page=await import('./js/materi.js');await page.renderMateri(app);}return;}
+  if(hash.startsWith('#/materi')){if(deployment.mode==='demo'){showDemoPlaceholder();}else {const page=await import('./pages/materi.js');await page.renderMateri(app);}return;}
   showDemoPlaceholder();
  } catch(error) { app.innerHTML=`<main class="preview-page"><div class="preview-card"><h1>Aplikasi tidak dapat dimuat</h1><p>${escapeHtml(error.message||error)}</p><button class="login-submit" id="retry">Coba lagi</button></div></main>`;app.querySelector('#retry')?.addEventListener('click',()=>location.reload()); }
  finally {navigating=false;}
