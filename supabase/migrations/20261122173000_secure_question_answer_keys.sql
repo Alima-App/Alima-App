@@ -24,12 +24,15 @@ WHERE kunci IS NOT NULL
 ON CONFLICT (soal_id)
 DO UPDATE SET kunci = EXCLUDED.kunci;
 
--- 2. Hilangkan kolom kunci dari tabel yang dapat dibaca mahasiswa.
-ALTER TABLE public.soal DROP COLUMN IF EXISTS kunci;
-
--- 3. Cabut SELECT seluruh tabel; berikan hanya kolom soal yang aman.
+-- 2. Cabut SELECT seluruh tabel dan hak SELECT kolom kunci sebelum kolomnya dihapus.
 REVOKE SELECT ON TABLE public.soal FROM PUBLIC, anon, authenticated;
 REVOKE SELECT (kunci) ON TABLE public.soal FROM PUBLIC, anon, authenticated;
+
+-- 3. Hilangkan kolom kunci dari tabel yang dapat dibaca mahasiswa.
+ALTER TABLE public.soal DROP COLUMN IF EXISTS kunci;
+
+-- Berikan hanya kolom soal yang aman.
+
 
 GRANT SELECT (id, tugas_id, pertanyaan, pilihan, urutan)
 ON TABLE public.soal TO authenticated;
