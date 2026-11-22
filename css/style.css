@@ -193,3 +193,8 @@ body{font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,
 .workspace-header{padding-left:0}
 .header-page-title{font-family:Inter,ui-sans-serif,system-ui,sans-serif!important;font-size:16px!important;font-weight:700;letter-spacing:0!important;margin:0!important}
 .workspace-context{margin:4px 0 14px;font-size:10px;letter-spacing:1.5px}
+
+
+/* Explicit student-dashboard hamburger visibility and placement. */
+.app-shell:not(.sidebar-open) > #btn-menu-toggle{display:inline-flex!important;visibility:visible!important;opacity:1!important;position:fixed!important;top:auto!important;right:auto!important;bottom:16px!important;left:16px!important;z-index:60!important}
+.app-shell.sidebar-open > #btn-menu-toggle{display:none!important}
