@@ -1,0 +1,7 @@
+import { logout } from '../auth.js';
+export function renderDashboardProduction(container, profile) {
+  const role = profile.peran === 'dosen' ? 'Dosen pengajar' : 'Mahasiswa';
+  container.innerHTML = `<main class="page-wrap" style="max-width:1000px;margin:3rem auto;padding:1rem 5%"><header style="display:flex;justify-content:space-between;align-items:center;gap:1rem"><div><div class="brand-lockup"><span class="brand-mark">ع</span><span>Alima</span></div><p class="eyebrow">LINGKUNGAN PRODUKSI</p></div><button id="btn-logout" class="login-submit" style="width:auto">Keluar</button></header><section class="preview-card" style="margin-top:2rem"><span class="eyebrow">${role.toUpperCase()}</span><h1>Assalamu’alaikum, ${escapeHtml(profile.nama || 'Pengguna')}.</h1><p>Anda masuk ke lingkungan produksi Alima App. Identitas akun dibaca dari tabel <code>profiles</code> melalui Supabase.</p><p>Gunakan navigasi kelas dan materi untuk mengakses data yang diizinkan oleh kebijakan RLS akun Anda.</p><nav style="display:flex;gap:1rem;flex-wrap:wrap"><a href="#/kelas">Kelas</a><a href="#/materi">Materi</a></nav></section><footer class="workspace-footer">Data produksi · Dilindungi Supabase Auth dan RLS</footer></main>`;
+  container.querySelector('#btn-logout').addEventListener('click',logout);
+}
+function escapeHtml(value) { return String(value).replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch])); }
