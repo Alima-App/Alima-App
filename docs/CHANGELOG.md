@@ -21,10 +21,10 @@ Format: tanggal — perubahan — status verifikasi.
 - Verification: belum / sudah (jelaskan cara uji)
 ```
 
-## 2026-11-22 — Perbaikan konfigurasi deployment dan startup (disiapkan)
-
-- Menambahkan workflow deployment GitHub Pages berbasis Actions.
-- Konfigurasi Supabase frontend dibuat saat workflow berjalan dari Repository Secrets.
-- Memperbaiki router agar halaman login/daftar tidak menunggu query profil.
-- Menambahkan penanganan error startup dan validasi cache profil.
-- Belum diterapkan ke repository/produksi; perlu pengujian setelah commit dan deployment.
+## 2026-11-22 — Demo UI login dan dashboard
+- Menambahkan mode demonstrasi offline berbasis `dummy-data.js`.
+- Login demo mendukung pemilihan akun dosen/mahasiswa dan password demo bersama.
+- Dashboard dosen dan mahasiswa menampilkan ringkasan dinamis dari dataset dummy.
+- Router demo tidak mengimpor Supabase atau modul halaman yang masih bergantung pada Supabase.
+- Halaman kelas/materi/tugas/nilai yang belum memiliki implementasi demo ditampilkan sebagai placeholder yang jelas.
+- Catatan: autentikasi demo hanya untuk preview, bukan mekanisme keamanan produksi.
