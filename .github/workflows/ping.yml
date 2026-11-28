@@ -5,12 +5,19 @@ on:
     - cron: '0 */6 * * *'  # setiap 6 jam
   workflow_dispatch:
 
+# Workflow ini tidak membutuhkan akses tulis ke repository.
+permissions:
+  contents: read
+
 jobs:
   ping:
     runs-on: ubuntu-latest
     steps:
       - name: Ping Supabase
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}  # gunakan publishable/anon key, BUKAN service-role key
         run: |
-          curl -s "${{ secrets.SUPABASE_URL }}/rest/v1/" \
-            -H "apikey: ${{ secrets.SUPABASE_KEY }}" \
+          curl -s --max-time 30 "$SUPABASE_URL/rest/v1/" \
+            -H "apikey: $SUPABASE_KEY" \
             -o /dev/null -w "Status: %{http_code}, Waktu: %{time_total}s\n"
