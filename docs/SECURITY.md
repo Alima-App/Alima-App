@@ -8,6 +8,7 @@ Frontend bersifat publik karena dihosting pada GitHub Pages. Karena itu, keamana
 
 - Supabase publishable/anon key dapat digunakan di frontend dengan RLS yang benar.
 - Supabase secret/service-role key tidak boleh ada di browser, repository, file dokumentasi publik, issue, atau log.
+- Secret `SUPABASE_KEY` pada workflow `ping.yml` harus berisi publishable/anon key, bukan service-role key.
 - Jika secret pernah terpapar, rotasi segera melalui dashboard Supabase dan audit penggunaannya.
 - Jangan menyalin nilai key ke dokumentasi master.
 
@@ -23,17 +24,19 @@ Dokumentasi sumber menyatakan RLS aktif, tetapi definisi policy lengkap belum di
 
 ## 4. Kunci jawaban dan penilaian
 
-- Jangan mengirim `soal.kunci` kepada browser mahasiswa.
+- Kunci jawaban disimpan di tabel `soal_kunci`, bukan di `soal`. Client tidak memiliki hak langsung atas tabel ini.
+- Jangan mengirim kunci kepada browser mahasiswa.
 - Jangan menghitung nilai PG hanya di JavaScript frontend.
-- Gunakan RPC server `hitung_nilai_pg`.
-- Batasi hak execute RPC dan validasi bahwa pemanggil berhak mengakses tugas/jawaban terkait.
+- Gunakan RPC server `hitung_nilai_pg` dan `berikan_nilai_jawaban`; keduanya memeriksa kepemilikan kelas, dan `berikan_nilai_jawaban` menolak nilai di luar 0–100.
+- Mahasiswa hanya dapat mengirim/mengubah jawaban sebelum `tugas.batas_waktu` dan selama jawaban belum bernilai (migrasi `20261126090000`).
 - Uji response API/Network agar kunci tidak bocor.
 
 ## 5. Storage
 
-- Bucket `materi-files` harus privat.
+- Bucket `materi-files` harus privat, dibatasi 50 MB dan MIME `application/pdf`/`audio/mpeg`.
 - Akses file melalui signed URL berumur pendek (tercatat 300 detik).
-- Policy upload, baca, dan hapus harus membatasi akses berdasarkan peran dan relasi kelas.
+- Policy upload, baca, ubah, dan hapus membatasi akses berdasarkan peran dan relasi kelas; role `anon` diblokir eksplisit pada bucket ini.
+- Hapus file Storage kelas **sebelum** menghapus baris `kelas`, karena policy memeriksa kelas pemilik file.
 - Jangan menganggap signed URL dapat dicabut secara individual setelah dibagikan; perlakukan sebagai kredensial sementara.
 
 ## 6. Validasi input dan aturan bisnis
@@ -47,24 +50,37 @@ Validasi pada frontend berguna untuk pengalaman pengguna, tetapi aturan keamanan
 - kepemilikan kelas,
 - penghapusan data.
 
-## 7. Daftar uji keamanan sebelum rilis
+## 7. Aturan frontend (anti-XSS)
+
+- Setiap data dari database atau pengguna yang dimasukkan ke `innerHTML` wajib melewati `escapeHtml()` dari `js/utils.js`. Ini termasuk nama, email, judul, isi teks, nama kelas, kode kelas, dan nilai atribut `data-*`.
+- Nama profil dapat diubah oleh mahasiswa sendiri dan ditampilkan ke dosen, jadi dianggap tidak tepercaya.
+- URL eksternal wajib melewati `safeHttpUrl()` (hanya `http:`/`https:`) dan tautan `target="_blank"` memakai `rel="noopener noreferrer"`.
+- Peran tidak dikirim dari klien saat pendaftaran; database selalu membuat akun baru sebagai `mahasiswa`. Akun dosen dibuat/diubah administrator.
+- Cache profil di `localStorage` hanya untuk tampilan UI dan kedaluwarsa 10 menit; jangan dipakai untuk keputusan keamanan.
+- Berkas alat bantu (`debug-panel.html`, `performance-panel.html`) tidak boleh ikut di-deploy ke produksi.
+
+## 8. Daftar uji keamanan sebelum rilis
 
 - [ ] Akun mahasiswa A tidak dapat membaca kelas mahasiswa B yang tidak diikutinya.
 - [ ] Dosen A tidak dapat mengubah kelas milik dosen B.
-- [ ] Mahasiswa tidak dapat membaca `soal.kunci`.
+- [ ] Mahasiswa tidak dapat membaca kunci jawaban (`soal_kunci`).
 - [ ] Mahasiswa tidak dapat mengubah nilai sendiri.
 - [ ] Pengguna tidak dapat mengirim jawaban atas nama pengguna lain.
 - [ ] Pengiriman ganda ditolak di database.
 - [ ] Jawaban setelah deadline ditolak oleh mekanisme server/database.
+- [ ] Jawaban yang sudah bernilai tidak dapat diubah mahasiswa.
 - [ ] File privat tidak dapat diakses tanpa otorisasi.
 - [ ] Storage policy tidak memberi akses publik yang tidak disengaja.
 - [ ] Tidak ada secret/service-role key di repository atau bundle browser.
 - [ ] RPC tidak dapat dipanggil untuk memanipulasi nilai pengguna lain.
+- [ ] RPC `insert_dummy_profile` (bila ada) tidak dapat dipanggil dari client.
+- [ ] Nama profil berisi tag HTML tampil sebagai teks biasa di halaman dosen.
+- [ ] Tautan materi dengan skema `javascript:` ditolak.
 
-## 8. Backup dan pemulihan
+## 9. Backup dan pemulihan
 
 Paket Supabase gratis yang tercatat tidak menyediakan backup otomatis. Lakukan ekspor manual berkala, simpan secara aman, dan dokumentasikan prosedur restore. Jangan menyimpan dump database berisi data pribadi di repository publik.
 
 ## Isolasi lingkungan
 
-Demo tidak boleh mengakses project Supabase. Produksi tidak boleh memuat `dummy-data.js` sebagai fallback autentikasi/data. Tidak ada pemilih mode di UI. URL dan publishable/anon key produksi disuntikkan oleh workflow; service-role key dilarang di frontend. Kebijakan RLS tetap menjadi batas keamanan utama dan harus diuji dengan akun berbeda.
+Demo tidak boleh mengakses project Supabase. Produksi tidak boleh memuat `dummy-data.js` sebagai fallback autentikasi/data. Tidak ada pemilih mode di UI. URL dan publishable/anon key produksi disuntikkan oleh workflow; service-role key dilarang di frontend. Kebijakan RLS tetap menjadi batas keamanan utama dan harus diuji dengan akun berbeda. Pastikan akun demo (`@alima.test`) tidak ada di project Supabase produksi.
