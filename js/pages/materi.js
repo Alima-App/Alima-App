@@ -1,11 +1,26 @@
 import { supabase } from '../supabase.js';
 import { getProfile } from '../auth.js';
+import { escapeHtml, safeHttpUrl } from '../utils.js';
+
+const BUCKET_MATERI = 'materi-files';
+const TIPE_MATERI = ['teks', 'pdf', 'mp3', 'link'];
+const MAKS_UKURAN_FILE = 50 * 1024 * 1024;
+
+// Ekstensi dan content-type ditentukan dari TIPE yang dipilih, bukan dari nama file pengguna.
+const ATURAN_FILE = {
+  pdf: { ext: 'pdf', contentType: 'application/pdf', mimes: ['application/pdf'], label: 'PDF' },
+  mp3: { ext: 'mp3', contentType: 'audio/mpeg', mimes: ['audio/mpeg', 'audio/mp3'], label: 'MP3' }
+};
 
 // Ambil kelas_id dari URL hash: #/materi?kelas=xxx
 function getKelasId() {
   const hash = window.location.hash;
   const params = new URLSearchParams(hash.includes('?') ? hash.split('?')[1] : '');
   return params.get('kelas');
+}
+
+function tipeAman(tipe) {
+  return TIPE_MATERI.includes(tipe) ? tipe : 'teks';
 }
 
 export async function renderMateri(container) {
@@ -61,8 +76,8 @@ async function renderPilihKelas(container, profile) {
         ${!kelasList || kelasList.length === 0
           ? `<div class="empty-state">Belum ada kelas tersedia.</div>`
           : kelasList.map(k => `
-            <a href="#/materi?kelas=${k.id}" class="card kelas-card" style="text-decoration:none;display:flex;align-items:center;justify-content:space-between">
-              <h3 style="font-size:1rem">${k.nama}</h3>
+            <a href="#/materi?kelas=${encodeURIComponent(k.id)}" class="card kelas-card" style="text-decoration:none;display:flex;align-items:center;justify-content:space-between">
+              <h3 style="font-size:1rem">${escapeHtml(k.nama)}</h3>
               <span style="color:var(--green);font-size:.85rem">Lihat Materi →</span>
             </a>
           `).join('')
@@ -89,7 +104,7 @@ async function renderMateriDosen(container, profile, kelas) {
       <div class="page-header">
         <div>
           <a href="#/kelas" class="back-link">← Kelas</a>
-          <h2>Materi — ${kelas.nama}</h2>
+          <h2>Materi — ${escapeHtml(kelas.nama)}</h2>
         </div>
         <button class="btn-primary" id="btn-tambah-materi">+ Tambah Materi</button>
       </div>
@@ -147,35 +162,44 @@ async function renderMateriDosen(container, profile, kelas) {
     </div>
   `;
 
-  setupFormMateri(kelas, profile, null);
+  setupFormMateri(container, kelas);
 
-  // Event delegasi
+  // Event delegasi: hapus materi
   document.getElementById('daftar-materi').addEventListener('click', async (e) => {
+    if (!e.target.classList.contains('btn-hapus-materi')) return;
     const materiId = e.target.closest('[data-materi-id]')?.dataset.materiId;
     if (!materiId) return;
+    if (!confirm('Hapus materi ini?')) return;
 
-    if (e.target.classList.contains('btn-hapus-materi')) {
-      if (!confirm('Hapus materi ini?')) return;
-      const { data: m } = await supabase.from('materi').select('tipe, file_key').eq('id', materiId).single();
-      if (m?.file_key) {
-        await supabase.storage.from('materi-files').remove([m.file_key]);
-      }
-      await supabase.from('materi').delete().eq('id', materiId);
-      window.location.hash = window.location.hash; // refresh
-      await renderMateri(container);
+    const btn = e.target;
+    btn.disabled = true;
+
+    const { data: m, error: errBaca } = await supabase
+      .from('materi').select('file_key').eq('id', materiId).single();
+    if (errBaca) { alert('Gagal membaca materi: ' + errBaca.message); btn.disabled = false; return; }
+
+    // Hapus baris database dulu. Jika gagal, file di Storage tidak disentuh,
+    // sehingga tidak ada materi yang menunjuk ke file yang sudah hilang.
+    const { error: errHapus } = await supabase.from('materi').delete().eq('id', materiId);
+    if (errHapus) { alert('Gagal menghapus materi: ' + errHapus.message); btn.disabled = false; return; }
+
+    if (m?.file_key) {
+      const { error: errFile } = await supabase.storage.from(BUCKET_MATERI).remove([m.file_key]);
+      if (errFile) console.warn('File materi gagal dihapus dari Storage:', errFile.message);
     }
+
+    await renderMateri(container);
   });
 }
 
-function setupFormMateri(kelas, profile, editData) {
+function setupFormMateri(container, kelas) {
   const form = document.getElementById('form-materi');
   const tipeSelect = document.getElementById('input-tipe');
 
   // Toggle field sesuai tipe
   tipeSelect.addEventListener('change', () => toggleFieldTipe(tipeSelect.value));
-  if (editData) toggleFieldTipe(editData.tipe);
 
-  document.getElementById('btn-tambah-materi')?.addEventListener('click', () => {
+  document.getElementById('btn-tambah-materi').addEventListener('click', () => {
     form.style.display = form.style.display === 'none' ? 'block' : 'none';
   });
   document.getElementById('btn-batal-materi').addEventListener('click', () => {
@@ -184,7 +208,7 @@ function setupFormMateri(kelas, profile, editData) {
   });
 
   document.getElementById('btn-simpan-materi').addEventListener('click', async () => {
-    await simpanMateri(kelas, profile, editData);
+    await simpanMateri(container, kelas);
   });
 }
 
@@ -194,83 +218,91 @@ function toggleFieldTipe(tipe) {
   document.getElementById('field-link').style.display = tipe === 'link' ? 'block' : 'none';
 
   if (tipe === 'pdf') {
-    document.getElementById('input-file').accept = '.pdf';
+    document.getElementById('input-file').accept = '.pdf,application/pdf';
     document.getElementById('label-file').textContent = 'File PDF';
     document.getElementById('hint-file').textContent = 'Maks 50 MB. Format: PDF.';
   } else if (tipe === 'mp3') {
-    document.getElementById('input-file').accept = '.mp3,audio/*';
+    document.getElementById('input-file').accept = '.mp3,audio/mpeg';
     document.getElementById('label-file').textContent = 'File Audio';
     document.getElementById('hint-file').textContent = 'Maks 50 MB. Format: MP3.';
   }
 }
 
-async function simpanMateri(kelas, profile, editData) {
+async function simpanMateri(container, kelas) {
   const judul = document.getElementById('input-judul').value.trim();
   const tipe = document.getElementById('input-tipe').value;
-  const urutan = parseInt(document.getElementById('input-urutan').value) || 0;
+  const urutan = parseInt(document.getElementById('input-urutan').value, 10) || 0;
   const errEl = document.getElementById('err-materi');
   const btn = document.getElementById('btn-simpan-materi');
+  const progressEl = document.getElementById('progress-upload');
+
+  const gagal = (pesan) => {
+    errEl.textContent = pesan;
+    progressEl.style.display = 'none';
+    btn.disabled = false;
+    btn.textContent = 'Simpan';
+  };
 
   errEl.textContent = '';
   if (!judul) { errEl.textContent = 'Judul tidak boleh kosong.'; return; }
+  if (!TIPE_MATERI.includes(tipe)) { errEl.textContent = 'Tipe materi tidak valid.'; return; }
 
   btn.disabled = true;
   btn.textContent = 'Menyimpan...';
 
-  let payload = { judul, tipe, urutan, kelas_id: kelas.id };
+  const payload = { judul, tipe, urutan, kelas_id: kelas.id };
+  let fileKeyBaru = null;
 
   if (tipe === 'teks') {
     const isi = document.getElementById('input-teks').value.trim();
-    if (!isi) { errEl.textContent = 'Isi teks tidak boleh kosong.'; btn.disabled = false; btn.textContent = 'Simpan'; return; }
+    if (!isi) return gagal('Isi teks tidak boleh kosong.');
     payload.isi_teks = isi;
 
   } else if (tipe === 'link') {
-    const url = document.getElementById('input-link').value.trim();
-    if (!url) { errEl.textContent = 'URL tidak boleh kosong.'; btn.disabled = false; btn.textContent = 'Simpan'; return; }
+    const mentah = document.getElementById('input-link').value.trim();
+    if (!mentah) return gagal('URL tidak boleh kosong.');
+    const url = safeHttpUrl(mentah);
+    if (!url) return gagal('URL tidak valid. Gunakan alamat yang diawali http:// atau https://.');
     payload.url_eksternal = url;
 
   } else {
     // PDF atau MP3 — upload ke Supabase Storage
+    const aturan = ATURAN_FILE[tipe];
     const file = document.getElementById('input-file').files[0];
-    if (!file) { errEl.textContent = 'Pilih file terlebih dahulu.'; btn.disabled = false; btn.textContent = 'Simpan'; return; }
-    if (file.size > 50 * 1024 * 1024) { errEl.textContent = 'File terlalu besar. Maks 50 MB.'; btn.disabled = false; btn.textContent = 'Simpan'; return; }
+    if (!file) return gagal('Pilih file terlebih dahulu.');
+    if (file.size > MAKS_UKURAN_FILE) return gagal('File terlalu besar. Maks 50 MB.');
+    if (!file.name.toLowerCase().endsWith('.' + aturan.ext)) return gagal(`File harus berformat ${aturan.label} (.${aturan.ext}).`);
+    // Sebagian perangkat mobile tidak mengisi file.type; ekstensi tetap diperiksa di atas.
+    if (file.type && !aturan.mimes.includes(file.type)) return gagal(`Jenis file tidak sesuai. Pilih file ${aturan.label}.`);
 
-    // Tampilkan progress
-    document.getElementById('progress-upload').style.display = 'block';
+    // Progres bersifat indikatif: supabase-js tidak melaporkan progres unggahan.
+    progressEl.style.display = 'block';
     setProgress(30);
 
-    const ext = file.name.split('.').pop();
-    const fileKey = `${kelas.id}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+    const fileKey = `${kelas.id}/${Date.now()}-${crypto.randomUUID()}.${aturan.ext}`;
 
     setProgress(50);
     const { error: errUpload } = await supabase.storage
-      .from('materi-files')
-      .upload(fileKey, file, { cacheControl: '3600', upsert: false });
+      .from(BUCKET_MATERI)
+      .upload(fileKey, file, { cacheControl: '3600', upsert: false, contentType: aturan.contentType });
 
-    if (errUpload) {
-      errEl.textContent = 'Gagal upload file: ' + errUpload.message;
-      document.getElementById('progress-upload').style.display = 'none';
-      btn.disabled = false; btn.textContent = 'Simpan';
-      return;
-    }
+    if (errUpload) return gagal('Gagal upload file: ' + errUpload.message);
+
     setProgress(90);
     payload.file_key = fileKey;
+    fileKeyBaru = fileKey;
   }
 
-  const { error } = editData
-    ? await supabase.from('materi').update(payload).eq('id', editData.id)
-    : await supabase.from('materi').insert(payload);
-
-  setProgress(100);
+  const { error } = await supabase.from('materi').insert(payload);
 
   if (error) {
-    errEl.textContent = error.message;
-    btn.disabled = false; btn.textContent = 'Simpan';
-    document.getElementById('progress-upload').style.display = 'none';
-    return;
+    // Bersihkan file yang sudah terunggah agar tidak menjadi file yatim.
+    if (fileKeyBaru) await supabase.storage.from(BUCKET_MATERI).remove([fileKeyBaru]);
+    return gagal(error.message);
   }
 
-  window.location.reload();
+  setProgress(100);
+  await renderMateri(container);
 }
 
 function setProgress(pct) {
@@ -291,17 +323,29 @@ function resetForm() {
 }
 
 function kartuMateriDosen(m) {
-  const ikonTipe = { teks: '📄', pdf: '📕', mp3: '🎵', link: '🔗' };
+  const tipe = tipeAman(m.tipe);
+  const isi = m.isi_teks || '';
+  const url = safeHttpUrl(m.url_eksternal);
+
+  let konten = '';
+  if (tipe === 'teks') {
+    konten = `<p class="materi-preview">${escapeHtml(isi.slice(0, 100))}${isi.length > 100 ? '...' : ''}</p>`;
+  } else if (tipe === 'link') {
+    konten = url
+      ? `<a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer" class="materi-link">${escapeHtml(url)}</a>`
+      : `<p class="hint">Tautan tidak valid.</p>`;
+  } else {
+    konten = `<p class="hint">File tersimpan di storage.</p>`;
+  }
+
   return `
-    <div class="card materi-card" data-materi-id="${m.id}">
+    <div class="card materi-card" data-materi-id="${escapeHtml(m.id)}">
       <div class="materi-info">
         <div class="materi-tipe-wrap">
-          <span class="materi-tipe-badge tipe-${m.tipe}">${m.tipe.toUpperCase()}</span>
-          <h3>${m.judul}</h3>
+          <span class="materi-tipe-badge tipe-${tipe}">${tipe.toUpperCase()}</span>
+          <h3>${escapeHtml(m.judul)}</h3>
         </div>
-        ${m.tipe === 'teks' ? `<p class="materi-preview">${m.isi_teks?.slice(0, 100)}${m.isi_teks?.length > 100 ? '...' : ''}</p>` : ''}
-        ${m.tipe === 'link' ? `<a href="${m.url_eksternal}" target="_blank" class="materi-link">${m.url_eksternal}</a>` : ''}
-        ${m.tipe === 'pdf' || m.tipe === 'mp3' ? `<p class="hint">File tersimpan di storage.</p>` : ''}
+        ${konten}
       </div>
       <div class="materi-actions">
         <button class="btn-danger btn-sm btn-hapus-materi">Hapus</button>
@@ -327,7 +371,7 @@ async function renderMateriMahasiswa(container, profile, kelas) {
       <div class="page-header">
         <div>
           <a href="#/kelas" class="back-link">← Kelas</a>
-          <h2>Materi — ${kelas.nama}</h2>
+          <h2>Materi — ${escapeHtml(kelas.nama)}</h2>
         </div>
       </div>
       <div id="daftar-materi">
@@ -341,44 +385,56 @@ async function renderMateriMahasiswa(container, profile, kelas) {
 
   // Event: unduh/buka file PDF dan MP3
   document.getElementById('daftar-materi').addEventListener('click', async (e) => {
-    if (!e.target.classList.contains('btn-unduh')) return;
-    const fileKey = e.target.dataset.fileKey;
-    const btn = e.target;
+    const btn = e.target.closest('.btn-unduh');
+    if (!btn) return;
+    const fileKey = btn.dataset.fileKey;
+
     btn.disabled = true;
     btn.textContent = 'Memuat...';
 
+    // Jendela dibuka secara sinkron (masih dalam gestur klik) agar tidak diblokir
+    // popup blocker, terutama di browser mobile; URL baru diisi setelah signed URL siap.
+    const jendela = window.open('', '_blank');
+
     const { data, error } = await supabase.storage
-      .from('materi-files')
+      .from(BUCKET_MATERI)
       .createSignedUrl(fileKey, 300); // berlaku 5 menit
 
-    if (error) {
-      alert('Gagal membuat tautan: ' + error.message);
-      btn.disabled = false;
-      btn.textContent = 'Unduh / Buka';
-      return;
+    if (error || !data?.signedUrl) {
+      if (jendela) jendela.close();
+      alert('Gagal membuat tautan: ' + (error?.message || 'tautan tidak tersedia'));
+    } else if (jendela) {
+      jendela.opener = null;
+      jendela.location.href = data.signedUrl;
+    } else {
+      window.location.href = data.signedUrl;
     }
 
-    window.open(data.signedUrl, '_blank');
     btn.disabled = false;
     btn.textContent = 'Unduh / Buka';
   });
 }
 
 function kartuMateriMahasiswa(m) {
+  const tipe = tipeAman(m.tipe);
   let konten = '';
-  if (m.tipe === 'teks') {
-    konten = `<div class="materi-teks">${m.isi_teks?.replace(/\n/g, '<br>') || ''}</div>`;
-  } else if (m.tipe === 'link') {
-    konten = `<a href="${m.url_eksternal}" target="_blank" class="btn-secondary btn-sm" style="margin-top:.5rem;display:inline-block">Buka Tautan →</a>`;
-  } else if (m.tipe === 'pdf' || m.tipe === 'mp3') {
-    konten = `<button class="btn-primary btn-sm btn-unduh" data-file-key="${m.file_key}" style="margin-top:.5rem">Unduh / Buka</button>`;
+
+  if (tipe === 'teks') {
+    konten = `<div class="materi-teks">${escapeHtml(m.isi_teks || '').replace(/\r?\n/g, '<br>')}</div>`;
+  } else if (tipe === 'link') {
+    const url = safeHttpUrl(m.url_eksternal);
+    konten = url
+      ? `<a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer" class="btn-secondary btn-sm" style="margin-top:.5rem;display:inline-block">Buka Tautan →</a>`
+      : `<p class="hint">Tautan tidak valid.</p>`;
+  } else if (m.file_key) {
+    konten = `<button class="btn-primary btn-sm btn-unduh" data-file-key="${escapeHtml(m.file_key)}" style="margin-top:.5rem">Unduh / Buka</button>`;
   }
 
   return `
-    <div class="card materi-card" data-materi-id="${m.id}">
+    <div class="card materi-card" data-materi-id="${escapeHtml(m.id)}">
       <div class="materi-tipe-wrap" style="margin-bottom:.5rem">
-        <span class="materi-tipe-badge tipe-${m.tipe}">${m.tipe.toUpperCase()}</span>
-        <h3>${m.judul}</h3>
+        <span class="materi-tipe-badge tipe-${tipe}">${tipe.toUpperCase()}</span>
+        <h3>${escapeHtml(m.judul)}</h3>
       </div>
       ${konten}
     </div>
@@ -386,5 +442,5 @@ function kartuMateriMahasiswa(m) {
 }
 
 function showError(container, msg) {
-  container.innerHTML = `<div class="page-wrap"><p class="error-msg">${msg}</p></div>`;
+  container.innerHTML = `<div class="page-wrap"><p class="error-msg">${escapeHtml(msg)}</p></div>`;
 }

@@ -1,9 +1,13 @@
 import { logout } from '../auth.js';
+import { escapeHtml, getInitials } from '../utils.js';
 
 export function renderDashboardProduction(container, profile) {
   const role = profile.peran === 'dosen' ? 'Dosen pengajar' : 'Mahasiswa';
-  const nama = escapeHtml(profile.nama || 'Pengguna');
-  const initials = nama.split(' ').slice(0, 2).map(part => part[0] || '').join('').toUpperCase();
+  const namaMentah = profile.nama || 'Pengguna';
+  const nama = escapeHtml(namaMentah);
+  // Inisial dihitung dari nama mentah, baru di-escape (sebelumnya dihitung dari
+  // teks yang sudah di-escape sehingga nama berawalan "&" atau "<" menghasilkan inisial salah).
+  const initials = escapeHtml(getInitials(namaMentah));
   const nilaiLabel = profile.peran === 'dosen' ? 'Penilaian' : 'Nilai saya';
 
   container.innerHTML = `
@@ -60,8 +64,4 @@ export function renderDashboardProduction(container, profile) {
   backdrop.addEventListener('click', closeMenu);
   container.querySelectorAll('.sidebar a').forEach(link => link.addEventListener('click', closeMenu));
   container.querySelector('#btn-logout').addEventListener('click', logout);
-}
-
-function escapeHtml(value) {
-  return String(value).replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
 }
